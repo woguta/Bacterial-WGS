@@ -15,6 +15,7 @@ scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
 
 ```
 The -r option is used to copy the directory recursively. The . at the end of the command specifies the current directory as the destination.
+space fullstop " ." specifies your current folder.
 
 3. Viewing  the files
  cd into current directory and view all the retrieved data by run
