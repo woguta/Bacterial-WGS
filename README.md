@@ -25,14 +25,14 @@
           evolutionary relationship between different bacterial strains. ANI-Dendogram which uses dREP gives genetic 
           relatedness between two bacterial genomes. It calculates the average percentage of nucleotide sequence identity 
           between the two genomes, taking into account both conserved and divergent regions.
-        ii. Pangenome analysis use Roary,
+        ii. Pangenome analysis use Roary.
         iii. Genome visualization in ring structures use BRIG.
         iv. AMR genes use RGI, CARD, PCA, ResFinder
         v. Functional annotation COG, GO, KEGG
         vi. DIvergence Time estimation
 12. Metadata - linking genotypic data with phenotypic traits, Plasmids, Mutations etc
 
-#Steps
+# Steps
 1. Creating directory
 ```
 cd /var/scratch/
