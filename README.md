@@ -40,8 +40,8 @@ mkdir -p $USER/bacteria-wgs/crpa
 cd $USER/bacteria-wgs/crpa
 
 ```
-2. Data retieval
-use scp username@remote:/path/to/data /path/to/local/directory
+2. Data retieval: 
+Use scp username@remote:/path/to/data /path/to/local/directory
 ```
 scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
 
@@ -49,14 +49,14 @@ scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
 The -r option is used to copy the directory recursively. The . at the end of the command specifies the current directory as the destination.
 space fullstop " ." specifies your current folder.
 
-3. Viewing  the files
+3. Viewing  the files: 
  cd into current directory and view all the retrieved data by run
  ```
 less filename.fastq
 head -n 10 filename.fastq
 tail -n 10 filename.fastq
 ```
-4. Unzip .gz files
+4. Unzip .gz files: 
 Use the gunzip or gzip command depending on your system
 ```
 gunzip -k *.gz
@@ -65,8 +65,37 @@ it keeps the .gz files too, to remove/delete .gz files run within your current d
 ```
 rm -f *.gz
 ```
-alternative run this code once without k
+alternatively, run this code once without k
 ```
 gunzip *.gz
 ```
 View the files as in 3 above
+
+5 Load modules, cd database
+```
+module load fastqc/0.11.9
+module load fastp/0.22.0
+module load krona/2.8.1
+module load centrifuge/1.0.4
+module load kraken/2.1.2
+module load spades/3.15
+module load quast/5.0.2
+module load samtools/1.15.1
+module load bowtie2/2.5.0
+module load bedtools/2.29.0
+module load bamtools/2.5.1
+module load ivar/1.3.1
+module load snpeff/4.1g
+module load bcftools/1.13
+module load nextclade/2.11.0
+module load R/4.2
+```
+6 Run fastqc on one sample
+```
+fastqc
+        -t 4
+        -o ./results/fastqc/
+        -f fastq ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq
+                ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.fastq
+```
+Here, the -t option specifies the number of CPU threads to use, -o specifies the output directory, -f specifies the file format (optional for FASTQ files), and the two positional arguments specify the paths to the two input FASTQ files.
