@@ -645,7 +645,7 @@ for file in "${input_dir}"/*.fasta; do
         -db "${db_path}" \
         -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
         -culling_limit 5 \
-        -num_threads 2 \
+        -num_threads 4 \
         -evalue 1e-25 \
         -out "${output_dir}/${filename}.vs.nt.cul5.1e25.megablast.out"
 done
