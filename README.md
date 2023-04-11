@@ -42,8 +42,11 @@ interactive -w compute05 -c 3
 cd /var/scratch/
 mkdir -p $USER/bacteria-wgs/crpa
 cd $USER/bacteria-wgs/crpa
-
 ```
+The mkdir -p command is used to create a directory and its parent directories (if they do not exist) in a single command.
+
+The -p option allows the mkdir command to create the parent directories if they do not exist.
+
 3. Data retieval: 
 Use scp username@remote:/path/to/data /path/to/local/directory
 ```
@@ -65,11 +68,11 @@ Use the gunzip or gzip command depending on your system
 ```
 gunzip -k *.gz
 ```
-it keeps the .gz files too, to remove/delete .gz files run within your current directory 
+it keeps the .gz files too, to remove/delete .gz files run within your "current directory!"
 ```
 rm -f *.gz
 ```
-alternatively, run this code once without k
+alternatively, run this code once without k as not to keep .gz files
 ```
 gunzip *.gz
 ```
@@ -128,6 +131,17 @@ fastp --in1 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq.gz \
 	|& tee ./results/fastp/AS-26335-C1-C_S4_L001.fastp.log
         
 ```
+--json: output a json file that summarizes the processing statistics of the reads
+--html: output an html file that visualizes the processing statistics of the reads
+--failed_out: output the reads that failed to pass the processing steps to a separate file
+--thread: number of threads to use, here 3
+-5 -3 -r: options for adapter trimming and quality filtering
+--detect_adapter_for_pe: automatically detect and trim adapters for paired-end reads
+--qualified_quality_phred: quality threshold for base calling
+--cut_mean_quality: quality threshold for sliding window trimming
+--length_required: minimum length required for reads to be kept after processing
+--dedup: deduplicate identical reads
+|& tee: save the command output to a log file as well as display it in the terminal
 
 b) Rerun the fastqc on the trimmed one file
 ```
@@ -303,6 +317,8 @@ Then
 ```
 squeue
 ```
+This will loop through all the R1 fastq files in the INPUT_DIR directory and run fastp on each pair of R1 and R2 files, outputting the trimmed files and the reports to the OUTPUT_DIR directory. The ${R1/R1_001.fastq.gz/R2_001.fastq.gz} line replaces the _R1_001.fastq.gz suffix in the filename with _R2_001.fastq.gz to get the R2 file. The ${basename ${R1} _R1_001.fastq.gz} line extracts the basename of the R1 file without the _R1_001.fastq.gz suffix to use as the name of the output files.
+
 Do fastqc for all the trimmed files
 ```
 #!/usr/bin/bash -l
@@ -347,6 +363,11 @@ spades.py -k 27 \
 -t 4 \
 -m 100
 ```
+k-mer size: 27 (-k 27)
+Input read files: SRR292862_1.trim.fastq.gz and SRR292862_2.trim.fastq.gz (-1 and -2)
+Output directory: ./results/spades (-o)
+Number of threads: 4 (-t 4)
+Memory limit: 100 GB (-m 100)
 
 For all samples via loop
 ```
@@ -405,6 +426,13 @@ quast.py \
 -t 4 \
 -o ./results/quast
 ```
+"quast.py": This is the command to run the QUAST software.
+
+"/results/spades/contigs.fasta": This is the path and filename of the input genome assembly file in FASTA format.
+
+"-t 4": This specifies that the software should use four threads to run the analysis, which can speed up the process.
+
+"-o /results/quast": This specifies the output directory where the results of the analysis will be stored.
 
 Inspect the quast report
 
@@ -442,7 +470,28 @@ Savs and run
 ```
  sbatch -w compute05 run_quast.sh
  ```
- 
+In this loop, the for statement iterates over all files in the input directory that end with the extension .fasta. For each file, the loop extracts the filename using the basename command, and creates a corresponding output path by replacing the file extension with the output directory using ${filename%.*}. The quast.py command is then run on the current file, using 4 threads and the output path created earlier.
+
+#!/usr/bin/bash -l: This is a shebang line that specifies the shell to use for the script.
+
+#SBATCH -p batch: This is an SLURM directive that specifies the partition or queue to run the job in. In this case, the job will be submitted to the "batch" partition.
+
+#SBATCH -J Quast: This sets the name of the job to "Quast".
+
+#SBATCH -n 4: This specifies the number of CPU cores to allocate for the job. In this case, the job will use 4 cores.
+
+input_dir=./results/spades: This sets the path to the directory containing the input files.
+
+output_dir=./results/quast: This sets the path to the directory where the output will be saved.
+
+for file in ${input_dir}/*.fasta; do: This begins a for loop that iterates over all files in the input directory that end with the extension .fasta.
+
+filename=$(basename "$file"): This extracts the filename from the full file path.
+
+output_path="${output_dir}/${filename%.*}": This creates the output path by replacing the file extension with the output directory.
+
+quast.py "$file" -t 4 -o "$output_path": This runs the quast.py command on the current file, using 4 threads and the output path created earlier.
+
  II) Genome completeness
  
 Assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. they're lacking or less then the genome is not complete.
@@ -513,6 +562,8 @@ Save & run_busco.sh
 ```
  sbatch -w compute05 run_busco.sh
  ```
+The input_dir and output_dir variables are set to the input and output directories, respectively, and the database variable is set to the name of the BUSCO lineage-specific database to use. The script loops through all FASTA files in the input_dir directory, sets the output path for each file, and then runs the busco command on the current file using the appropriate parameters. The output is saved to a directory named after the input file, with the ".busco" suffix added.
+ 
 III) Genome annotation
 
 In genome annotation, the goal is to identify and label the features of on a genome sequence.
