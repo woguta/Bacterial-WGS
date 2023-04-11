@@ -155,3 +155,70 @@ To use this script, you can save it to a file (e.g., run_fastqc.sh), make it exe
 ```
 bash run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/
 ```
+11. Run fastp for all the samples
+a) First Pathway
+```
+#!/bin/bash
+
+#Set the input and output directories
+INPUT_DIR=./raw_data/Fastq/
+OUTPUT_DIR=./results/fastp/
+
+#Loop through all files in the input directory
+for FILENAME in ${INPUT_DIR}*.fastq.gz; do
+
+  #Extract the sample name from the file name
+  SAMPLE_NAME=$(basename ${FILENAME} .fastq.gz)
+
+  #Run fastp on the sample
+  fastp \
+    --in1 ${INPUT_DIR}${SAMPLE_NAME}.fastq.gz \
+    --in2 ${INPUT_DIR}${SAMPLE_NAME}_2.fastq.gz \
+    --out1 ${OUTPUT_DIR}${SAMPLE_NAME}.trim.fastq.gz \
+    --out2 ${OUTPUT_DIR}${SAMPLE_NAME}_2.trim.fastq.gz \
+    --json ${OUTPUT_DIR}${SAMPLE_NAME}.fastp.json \
+    --html ${OUTPUT_DIR}${SAMPLE_NAME}.fastp.html \
+    --failed_out ${OUTPUT_DIR}${SAMPLE_NAME}_failed.fastq.gz \
+    --thread 4 \
+    -5 -3 -r \
+    --detect_adapter_for_pe \
+    --qualified_quality_phred 30 \
+    --cut_mean_quality 30 \
+    --length_required 15 \
+    --dedup \
+    |& tee ${OUTPUT_DIR}${SAMPLE_NAME}.fastp.log
+
+done
+```
+Save the scrip as run_fastp.sh
+
+run the script
+```
+bash run_fastp.sh
+```
+b) Second Pathway
+```
+INPUT_DIR=./raw_data/Fastq/
+OUTPUT_DIR=./results/fastp/
+
+for R1 in $INPUT_DIR/*R1_001.fastq.gz
+do
+    R2=${R1/R1_001.fastq.gz/R2_001.fastq.gz}
+    NAME=$(basename ${R1} _R1_001.fastq.gz)
+    fastp --in1 ${R1} \
+          --in2 ${R2} \
+          --out1 ${OUTPUT_DIR}/${NAME}.R1.trim.fastq.gz \
+          --out2 ${OUTPUT_DIR}/${NAME}.R2.trim.fastq.gz \
+          --json ${OUTPUT_DIR}/${NAME}.fastp.json \
+          --html ${OUTPUT_DIR}/${NAME}.fastp.html \
+          --failed_out ${OUTPUT_DIR}/${NAME}.failed.fastq.gz \
+          --thread 4 \
+          -5 -3 -r \
+          --detect_adapter_for_pe \
+          --qualified_quality_phred 30 \
+          --cut_mean_quality 30 \
+          --length_required 15 \
+          --dedup \
+          |& tee ${OUTPUT_DIR}/${NAME}.fastp.log
+done
+```
