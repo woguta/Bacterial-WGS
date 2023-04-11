@@ -378,9 +378,9 @@ do
             |& tee ${OUTPUT_DIR}/${SAMPLE}.spades.log || echo "${SAMPLE} failed"
 done
 ```
-run the loop as saved
+run the loop saved as run_spades.sh
 ```
- sbatch -w compute05 run_spades
+ sbatch -w compute05 run_spades.sh
  ```
 10. View the fasta files
 
@@ -394,7 +394,9 @@ grep '>' contigs.fasta | head
 ```
 11.Genome Assessment 
 
-i) Genome contiguity - checks length/cutoff for the longest contigs that contain 50% of the total genome length measured as contig N50. i.e  involves evaluating the accuracy and completeness of the genome assembly using metrics such as N50 length, scaffold and contig numbers, and genome size. Tool used QUAST.
+i) Genome contiguity
+
+Checks length/cutoff for the longest contigs that contain 50% of the total genome length measured as contig N50. i.e  involves evaluating the accuracy and completeness of the genome assembly using metrics such as N50 length, scaffold and contig numbers, and genome size. Tool used QUAST.
 
 a) For one sample
 ```
@@ -418,7 +420,7 @@ b) For all the samples
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J Quast
+#SBATCH -J QUAST
 #SBATCH -n 4
 
 # Set the path to the directory containing the input files
@@ -436,8 +438,14 @@ for file in ${input_dir}/*.fasta; do
     quast.py "$file" -t 4 -o "$output_path"
 done
 ```
-
-ii) Genome completeness - assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. they're lacking or less then the genome is not complete.
+Savs and run
+```
+ sbatch -w compute05 run_quast.sh
+ ```
+ 
+ ii) Genome completeness
+ 
+Assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. they're lacking or less then the genome is not complete.
 
 a) For one sample 
 
@@ -462,3 +470,33 @@ busco \
 -f
 ```
 This command will run BUSCO on the contigs.fasta file using the "bacteria_odb10" database, outputting the results to a directory called AS-27566-C1-C_S23_L001_busco, using 4 CPUs, and overwriting any previous results in that directory (-f flag).
+
+b) Loop for all files?
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J BUSCO
+#SBATCH -n 4
+
+# Set the path to the directory containing the input files
+input_dir=./results/spades
+
+# Set the path to the directory where the output will be saved
+output_dir=./results/busco
+
+# Set the path to the BUSCO lineage-specific database
+database=bacteria_odb10
+
+# Loop through all FASTA files in the input directory
+for file in ${input_dir}/*.fasta; do
+    filename=$(basename "$file")
+    output_path="${output_dir}/${filename%.*}"
+    
+    # Run the BUSCO command on the current file
+    busco -i "$file" -m bacteria -o "$output_path" -l "$database" -c 4 -f
+done
+```
+Save us run_busco.sh
+```
+ sbatch -w compute05 run_busco.sh
+ ```
