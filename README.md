@@ -103,3 +103,30 @@ fastqc
                 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.fastq
 ```
 Here, the -t option specifies the number of CPU threads to use, -o specifies the output directory, -f specifies the file format (optional for FASTQ files), and the two positional arguments specify the paths to the two input FASTQ files.
+8. Fastqc loop shell in bash
+```
+nano
+```
+```
+#!/bin/bash
+```
+```
+#bash generate-fastqc-reports.sh ./results/fastqc/ ./raw_data/Fastq/
+
+#Make directory to store the results
+mkdir -p ./results/fastqc/fastqc_reports
+
+#load fastqc module
+module load fastqc/0.11.4
+
+#fastqc reports directory
+REPORT_DIR=$1
+
+#fastq files directory
+FASTQ_DIR=$2
+```
+#run fastqc tool
+for file in $FASTQ_DIR/*.fastq; do
+        fastqc ${file} -o ${REPORT_DIR} -f fastq
+        done
+````
