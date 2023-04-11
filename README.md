@@ -157,7 +157,7 @@ bash run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/
 ```
 11. Run fastp for all the samples
 
-13. a) First Pathway
+a) First Pathway
 ```
 #!/bin/bash
 
@@ -228,4 +228,8 @@ do
           --dedup \
           |& tee ${OUTPUT_DIR}/${NAME}.fastp.log
 done
+```
+Save and run
+```
+run_fastp2.sh
 ```
