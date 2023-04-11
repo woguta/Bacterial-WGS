@@ -116,8 +116,8 @@ fastp --in1 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq.gz \
 	--thread 4 \
 	-5 -3 -r \
 	--detect_adapter_for_pe \
-	--qualified_quality_phred 30 \
-	--cut_mean_quality 30\
+	--qualified_quality_phred 20 \
+	--cut_mean_quality 20\
 	--length_required 15 \
 	--dedup \
 	|& tee ./results/fastp/AS-26335-C1-C_S4_L001.fastp.log
@@ -186,8 +186,8 @@ for FILENAME in ${INPUT_DIR}*.fastq.gz; do
     --thread 4 \
     -5 -3 -r \
     --detect_adapter_for_pe \
-    --qualified_quality_phred 30 \
-    --cut_mean_quality 30 \
+    --qualified_quality_phred 20 \
+    --cut_mean_quality 20 \
     --length_required 15 \
     --dedup \
     |& tee ${OUTPUT_DIR}${SAMPLE_NAME}.fastp.log
@@ -222,8 +222,8 @@ do
           --thread 4 \
           -5 -3 -r \
           --detect_adapter_for_pe \
-          --qualified_quality_phred 30 \
-          --cut_mean_quality 30 \
+          --qualified_quality_phred 20 \
+          --cut_mean_quality 20 \
           --length_required 15 \
           --dedup \
           |& tee ${OUTPUT_DIR}/${NAME}.fastp.log
