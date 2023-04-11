@@ -221,7 +221,7 @@ done
 ```
 Save and run
 ```
-run_fastp.sh
+ sbatch -w compute05 run_fastp.sh
 ```
 iii) Second pathway sbatch - sunmitiing jobs to the cluster as you do other things (the best option)
 ```
@@ -582,6 +582,11 @@ for file in ${input_dir}/*.fasta; do
     prokka "$file" --outdir "$output_path" --cpus 4 --mincontiglen 200 --centre C --locustag L --compliant --force
 done
 ```
+Save and run
+```
+ sbatch -w compute05 run_prokka.sh
+ ```
+
 12. Species Identification
 ```
 module load blast/2.12.0+
