@@ -94,7 +94,7 @@ module load bcftools/1.13
 module load nextclade/2.11.0
 module load R/4.2
 ```
-7 Run fastqc on one sample
+7. Run fastqc on one sample
 ```
 fastqc
         -t 4
@@ -103,14 +103,35 @@ fastqc
                 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.fastq
 ```
 Here, the -t option specifies the number of CPU threads to use, -o specifies the output directory, -f specifies the file format (optional for FASTQ files), and the two positional arguments specify the paths to the two input FASTQ files.
-8. Fastqc loop shell in bash
+
+8. Run fastp for one file
+```
+fastp --in1 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq.gz \
+	--in2 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.fastq.gz \
+	--out1 ./results/fastp/AS-26335-C1-C_S4_L001_R1_001.trim.fastq.gz \
+	--out2 ./results/fastp/AS-26335-C1-C_S4_L001_R2_001.trim.fastq.gz \
+	--json results/fastp/AS-26335-C1-C_S4_L001.fastp.json \
+	--html results/fastp/AS-26335-C1-C_S4_L001.fastp.html \
+	--failed_out ./results/fastp/AS-26335-C1-C_S4_L001_fail.fastq.gz \
+	--thread 4 \
+	-5 -3 -r \
+	--detect_adapter_for_pe \
+	--qualified_quality_phred 30 \
+	--cut_mean_quality 30\
+	--length_required 15 \
+	--dedup \
+	|& tee ./results/fastp/AS-26335-C1-C_S4_L001.fastp.log
+        
+```
+10. Fastqc loop shell in bash
+
 ```
 nano
 ```
+#Create shebang scripts
 ```
 #!/bin/bash
-```
-```
+
 #bash generate-fastqc-reports.sh ./results/fastqc/ ./raw_data/Fastq/
 
 #Make directory to store the results
