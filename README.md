@@ -152,7 +152,7 @@ fastqc
                 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.trim.fastq
 ```
 
-b) Fastqc loop shell in bash for all the the files
+b) Fastqc loop for all the the files
 
 ```
 nano
@@ -198,46 +198,6 @@ OUTPUT_DIR=./results/fastp/
 module load fastp/0.22.0
 
 #Loop through all files in the input directory
-for FILENAME in ${INPUT_DIR}*.fastq.gz; do
-
-  #Extract the sample name from the file name
-  SAMPLE_NAME=$(basename ${FILENAME} .fastq.gz)
-
-  #Run fastp on the sample
-  fastp \
-    --in1 ${INPUT_DIR}${SAMPLE_NAME}.fastq.gz \
-    --in2 ${INPUT_DIR}${SAMPLE_NAME}_2.fastq.gz \
-    --out1 ${OUTPUT_DIR}${SAMPLE_NAME}.trim.fastq.gz \
-    --out2 ${OUTPUT_DIR}${SAMPLE_NAME}_2.trim.fastq.gz \
-    --json ${OUTPUT_DIR}${SAMPLE_NAME}.fastp.json \
-    --html ${OUTPUT_DIR}${SAMPLE_NAME}.fastp.html \
-    --failed_out ${OUTPUT_DIR}${SAMPLE_NAME}_failed.fastq.gz \
-    --thread 4 \
-    -5 -3 -r \
-    --detect_adapter_for_pe \
-    --qualified_quality_phred 20 \
-    --cut_mean_quality 20 \
-    --length_required 15 \
-    --dedup \
-    |& tee ${OUTPUT_DIR}${SAMPLE_NAME}.fastp.log
-
-done
-```
-Save the scrip as run_fastp.sh
-
-run the script
-```
-bash run_fastp.sh
-```
-ii) Second Pathway
-```
-#making directories
-INPUT_DIR=./raw_data/Fastq/
-OUTPUT_DIR=./results/fastp/
-
-#load modules
-module load fastp/0.22.0
-
 for R1 in $INPUT_DIR/*R1_001.fastq.gz
 do
     R2=${R1/R1_001.fastq.gz/R2_001.fastq.gz}
@@ -261,9 +221,9 @@ done
 ```
 Save and run
 ```
-run_fastp2.sh
+run_fastp.sh
 ```
-iii) Third pathway sbatch - sunmitiing jobs to the cluster as you do other things (the best option)
+iii) Second pathway sbatch - sunmitiing jobs to the cluster as you do other things (the best option)
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -317,7 +277,7 @@ Then
 ```
 squeue
 ```
-This will loop through all the R1 fastq files in the INPUT_DIR directory and run fastp on each pair of R1 and R2 files, outputting the trimmed files and the reports to the OUTPUT_DIR directory. The ${R1/R1_001.fastq.gz/R2_001.fastq.gz} line replaces the _R1_001.fastq.gz suffix in the filename with _R2_001.fastq.gz to get the R2 file. The ${basename ${R1} _R1_001.fastq.gz} line extracts the basename of the R1 file without the _R1_001.fastq.gz suffix to use as the name of the output files.
+These will loop through all the R1 fastq files in the INPUT_DIR directory and run fastp on each pair of R1 and R2 files, outputting the trimmed files and the reports to the OUTPUT_DIR directory. The ${R1/R1_001.fastq.gz/R2_001.fastq.gz} line replaces the _R1_001.fastq.gz suffix in the filename with _R2_001.fastq.gz to get the R2 file. The ${basename ${R1} _R1_001.fastq.gz} line extracts the basename of the R1 file without the _R1_001.fastq.gz suffix to use as the name of the output files.
 
 Do fastqc for all the trimmed files
 ```
@@ -405,15 +365,15 @@ run the loop saved as run_spades.sh
  ```
 10. View the fasta files
 
-sequence/contigs
+i) sequence/contigs
 ```
 ls -lht ./results/spades/contigs.fasta
 ```
-First 10 files/head
+ii) First 10 files/head
 ```
 grep '>' contigs.fasta | head
 ```
-11.Genome Assessment 
+11.Genome Assessment [input file contigs.fasta)
 
 I) Genome contiguity
 
@@ -436,7 +396,7 @@ quast.py \
 
 Inspect the quast report
 
-i) to your local wkd from hpc
+i) Download to your local wkd from hpc
 ```
 cp -i AS-27566-C1-C_S23_L001/*.html ~/
 ```
@@ -444,7 +404,7 @@ ii) To local computer homepage/wkd
 ```
 scp woguta@hpc.ilri.cgiar.org:~/AS-27566-C1-C_S23_L001.html .
 ```
-b) For all the samples
+b) Loop for all the samples
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -496,7 +456,7 @@ quast.py "$file" -t 4 -o "$output_path": This runs the quast.py command on the c
  
 Assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. they're lacking or less then the genome is not complete.
 
-a) For one sample 
+I) For one sample 
 
 i) Using genome ref
 ```
@@ -520,16 +480,16 @@ busco \
 ```
 This command will run BUSCO on the contigs.fasta file using the "bacteria_odb10" database, outputting the results to a directory called AS-27566-C1-C_S23_L001_busco, using 4 CPUs, and overwriting any previous results in that directory (-f flag).
 
-View short summary 
+i) View short summary 
 ```
 less -S AS-27566-C1-C_S23_L001_busco/short_summary.specific.bacteria_odb10.AS-27566-C1-C_S23_L001_busco.txt
 ```
 
-View full summary 
+ii) View full summary 
 ```
 less -S AS-27566-C1-C_S23_L001_busco/run_bacteria_odb10/full_table.tsv
 ```
-List and view a amino acid of protein sequence
+iii) List and view a amino acid of protein sequence
 ```
 ls AS-27566-C1-C_S23_L001_busco/run_bacteria_odb10/busco_sequences/
 ```
@@ -592,6 +552,14 @@ prokka ./results/spades/contigs.fasta \
 
 In this command, ./results/spades/contigs.fasta is the path to the input genome assembly file, --outdir specifies the output directory, --cpus specifies the number of CPUs to use, --mincontiglen specifies the minimum length of contigs to keep, --centre sets the sequencing centre abbreviation in the GenBank output, --locustag sets the locus tag prefix, --compliant enforces compliance with NCBI submission guidelines, and --force overwrites any existing output files.
 
+Protein abundance
+```
+grep -o "product=.*" L_*.gff | sed 's/product=//g' | sort | uniq -c | sort -nr > protein_abundances.txt
+```
+View protein abundances
+```
+less -S protein_abundances.txt
+```
 ii) fo all files.
 ```
 #!/usr/bin/bash -l
@@ -614,3 +582,32 @@ for file in ${input_dir}/*.fasta; do
     prokka "$file" --outdir "$output_path" --cpus 4 --mincontiglen 200 --centre C --locustag L --compliant --force
 done
 ```
+12. Species Identification
+```
+module load blast/2.12.0+
+```
+```
+cd ./results/blast
+```
+```
+blastn \
+-task megablast \
+-query ./results/spades/contigs.fasta \
+-db /export/data/bio/ncbi/blast/db/v5/nt \
+-outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
+-culling_limit 5 \
+-num_threads 4 \
+-evalue 1e-25 \
+-out ./results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out
+```
+
+This is a command to run blastn with the megablast algorithm on the contigs.fasta file generated by the SPAdes assembler. It searches against the non-redundant nucleotide database (nt) from NCBI using a strict output format (outfmt) that includes the query sequence ID, taxonomy IDs, bit score, standard deviation, scientific names, kingdom, and sequence title. It sets a culling limit of 5 to remove redundant hits and uses 4 threads for the search. The e-value threshold is set to 1e-25, and the output is saved to the contigs.fasta.vs.nt.cul5.1e25.megablast.out file in the blast directory.
+
+-task megablast: uses the megablast algorithm, which is optimized for highly similar sequences.
+-query ./results/spades/contigs.fasta: specifies the input FASTA file containing the assembled contigs to be searched.
+-db /export/data/bio/ncbi/blast/db/v5/nt: specifies the path to the NCBI nt database to be searched.
+-outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle': specifies the output format as a custom tabular format with columns for query sequence ID, taxonomic IDs of hits, bitscore, standard deviation, scientific names, kingdom names, and hit descriptions.
+-culling_limit 5: filters out hits that have more than 5 other hits with better scores.
+-num_threads 4: specifies the number of threads to be used for the search.
+-evalue 1e-25: sets the e-value threshold for reporting significant hits to 1e-25.
+-out ./results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out: specifies the output file for the BLASTN results.
