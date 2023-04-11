@@ -132,5 +132,5 @@ for file in $FASTQ_DIR/*.fastq; do
 ````
 To use this script, you can save it to a file (e.g., run_fastqc.sh), make it executable (chmod +x run_fastqc.sh), and then run it with the directory paths as arguments
 ```
-./run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/).
+bash run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/).
 ```
