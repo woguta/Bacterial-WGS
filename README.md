@@ -524,3 +524,42 @@ module purge
 ```
 module load prokka/1.11
 ```
+```
+cd ./results/prokka
+```
+i) Run for one sample
+```
+prokka ./results/spades/contigs.fasta \
+--outdir ./results/prokka \
+--cpus 4 \
+--mincontiglen 200 \
+--centre C \
+--locustag L \
+--compliant \
+--force
+```
+
+In this command, ./results/spades/contigs.fasta is the path to the input genome assembly file, --outdir specifies the output directory, --cpus specifies the number of CPUs to use, --mincontiglen specifies the minimum length of contigs to keep, --centre sets the sequencing centre abbreviation in the GenBank output, --locustag sets the locus tag prefix, --compliant enforces compliance with NCBI submission guidelines, and --force overwrites any existing output files.
+
+ii) fo all files.
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Prokka
+#SBATCH -n 4
+
+# Set the path to the directory containing the input files
+input_dir=./results/spades
+
+# Set the path to the directory where the output will be saved
+output_dir=./results/prokka
+
+# Loop through all FASTA files in the input directory
+for file in ${input_dir}/*.fasta; do
+    filename=$(basename "$file")
+    output_path="${output_dir}/${filename%.*}"
+    
+    # Run the Prokka command on the current file
+    prokka "$file" --outdir "$output_path" --cpus 4 --mincontiglen 200 --centre C --locustag L --compliant --force
+done
+```
