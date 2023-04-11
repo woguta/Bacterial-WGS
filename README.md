@@ -273,3 +273,17 @@ run the job as saved
 ```
 sbatch -w compute05 run_fastp2.sh
 ```
+Checking the submitted job
+```
+ls -lth
+```
+Check the nano slurm number and squeue
+
+```
+nano slurm number
+
+```
+Then 
+```
+squeue
+```
