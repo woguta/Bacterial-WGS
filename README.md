@@ -379,3 +379,17 @@ run the loop as saved
 ```
  sbatch -w compute05 run_spades
  ```
+10 View the fasta files/sequence/contigs
+```
+ls -lht ./results/spades/contigs.fasta
+```
+11.Genome Assessment 
+
+i) Genome contiguity - check qualities such length cutoff for the longest contigs that contain 50% of the total genome length. It is often measured as contig N50. i.e  involves evaluating the accuracy and completeness of the genome assembly using metrics such as N50 length, scaffold and contig numbers, and genome size. Tool used QUAST.
+```
+quast.py \
+/results/spades/contigs.fasta \
+-t 4 \
+-o /results/quast
+```
+ii) Genome completeness
