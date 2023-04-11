@@ -85,6 +85,7 @@ module load kraken/2.1.2
 module load spades/3.15
 module load quast/5.0.2
 module load samtools/1.15.1
+module load BUSCO/5.2.2
 module load bowtie2/2.5.0
 module load bedtools/2.29.0
 module load bamtools/2.5.1
@@ -93,6 +94,8 @@ module load snpeff/4.1g
 module load bcftools/1.13
 module load nextclade/2.11.0
 module load R/4.2
+module load prokka/1.11
+module load blast/2.12.0+
 ```
 7. Run fastqc on one sample
 ```
@@ -379,9 +382,15 @@ run the loop as saved
 ```
  sbatch -w compute05 run_spades
  ```
-10 View the fasta files/sequence/contigs
+10. View the fasta files
+
+sequence/contigs
 ```
 ls -lht ./results/spades/contigs.fasta
+```
+First 10 files/head
+```
+grep '>' contigs.fasta | head
 ```
 11.Genome Assessment 
 
@@ -396,10 +405,15 @@ quast.py \
 ```
 
 Inspect the quast report
-```
 
+i) to your local wkd from hpc
 ```
-
+cp -i AS-27566-C1-C_S23_L001/*.html ~/
+```
+ii) To local computer homepage/wkd
+```
+scp woguta@hpc.ilri.cgiar.org:~/AS-27566-C1-C_S23_L001.html .
+```
 b) For all the samples
 ```
 #!/usr/bin/bash -l
@@ -426,6 +440,8 @@ done
 ii) Genome completeness - assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. they're lacking or less then the genome is not complete.
 
 a) For one sample 
+
+i) Using genome ref
 ```
 busco \
 -i ./results/spades/contigs.fasta \
@@ -434,3 +450,15 @@ busco \
 -l bacteria \
 -c 4 \
 -f
+```
+ii) for unknown spp using busco bacterial database 
+```
+busco \
+-i ./results/spades/contigs.fasta \
+-m bacteria \
+-o AS-27566-C1-C_S23_L001_busco \
+-l bacteria_odb10 \
+-c 4 \
+-f
+```
+This command will run BUSCO on the contigs.fasta file using the "bacteria_odb10" database, outputting the results to a directory called AS-27566-C1-C_S23_L001_busco, using 4 CPUs, and overwriting any previous results in that directory (-f flag).
