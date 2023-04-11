@@ -124,9 +124,13 @@ REPORT_DIR=$1
 
 #fastq files directory
 FASTQ_DIR=$2
-```
+
 #run fastqc tool
 for file in $FASTQ_DIR/*.fastq; do
         fastqc ${file} -o ${REPORT_DIR} -f fastq
         done
 ````
+To use this script, you can save it to a file (e.g., run_fastqc.sh), make it executable (chmod +x run_fastqc.sh), and then run it with the directory paths as arguments
+```
+./run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/).
+```
