@@ -104,7 +104,9 @@ fastqc
 ```
 Here, the -t option specifies the number of CPU threads to use, -o specifies the output directory, -f specifies the file format (optional for FASTQ files), and the two positional arguments specify the paths to the two input FASTQ files.
 
-8. Run fastp for one file
+8. Run fastp
+
+a) for one file
 ```
 fastp --in1 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq.gz \
 	--in2 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.fastq.gz \
@@ -123,7 +125,17 @@ fastp --in1 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq.gz \
 	|& tee ./results/fastp/AS-26335-C1-C_S4_L001.fastp.log
         
 ```
-10. Fastqc loop shell in bash
+
+b) Rerun the fastqc on the trimmed one file
+```
+fastqc
+        -t 4
+        -o ./results/fastqc/
+        -f fastq ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.trim.fastq
+                ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.trim.fastq
+```
+
+b) Fastqc loop shell in bash for all the the files
 
 ```
 nano
@@ -135,7 +147,7 @@ Create shebang scripts
 #bash generate-fastqc-reports.sh ./results/fastqc/ ./raw_data/Fastq/
 
 #Make directory to store the results
-mkdir -p ./results/fastqc/fastqc_reports
+mkdir -p ./results/fastqc/
 
 #load fastqc module
 module load fastqc/0.11.4
@@ -155,9 +167,9 @@ To use this script, you can save it to a file (e.g., run_fastqc.sh), make it exe
 ```
 bash run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/
 ```
-11. Run fastp for all the samples
 
-a) First Pathway
+#Running fastp for all the files/trimming all the files
+i) First Pathway
 ```
 #!/bin/bash
 
@@ -200,8 +212,9 @@ run the script
 ```
 bash run_fastp.sh
 ```
-b) Second Pathway
+ii) Second Pathway
 ```
+#making directories
 INPUT_DIR=./raw_data/Fastq/
 OUTPUT_DIR=./results/fastp/
 
@@ -233,7 +246,7 @@ Save and run
 ```
 run_fastp2.sh
 ```
-c) Third pathway sbatch - sunmitiing jobs to the cluster
+iii) Third pathway sbatch - sunmitiing jobs to the cluster as you do other things (the best option)
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -287,3 +300,77 @@ Then
 ```
 squeue
 ```
+Do fastqc for all the trimmed files
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J fastqc
+#SBATCH -n 4
+
+# load modules
+module load fastqc/0.11.9
+
+# set input and output directories
+INPUT_DIR=./results/fastp
+OUTPUT_DIR=./results/fastqc
+
+# make output directory if it doesn't exist
+mkdir -p $OUTPUT_DIR
+
+# loop over all the trimmed fastq files in the input directory
+for file in $INPUT_DIR/*.trim.fastq.gz; do
+
+    # get the filename without the extension
+    filename=$(basename "$file" .trim.fastq.gz)
+
+    # run fastqc on the file and save the output to the output directory
+    fastqc -t 4 -o $OUTPUT_DIR $file
+
+done
+```
+run the job as saved
+
+```
+sbatch -w compute05 run_fastqc_trim.sh
+```
+9. Genome Assembly using SPAdes for the trimmed files
+i) for one sample
+```
+spades.py -k 27 \
+-1 ./results/fastp/AS-27566-C1_S5_L001.R1.trim.fastq.gz \
+-2 ./results/fastp/AS-27566-C1_S5_L001.R2.trim.fastq.gz \
+-o ./results/spades \
+-t 4 \
+-m 100
+```
+For all samples via loop
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J SPAdes
+#SBATCH -n 4
+
+# Load modules
+module load spades/3.15
+
+# Define input and output directories
+INPUT_DIR=./results/fastp
+OUTPUT_DIR=./results/spades
+
+# Iterate over all files in input directory
+for file in ${INPUT_DIR}/*_R1.trim.fastq.gz
+do
+  # Extract sample name from file name
+  SAMPLE=$(basename "${file}" _R1.trim.fastq.gz)
+
+  # Run spades.py
+  spades.py -k 27 \
+            -1 ${INPUT_DIR}/${SAMPLE}_R1.trim.fastq.gz \
+            -2 ${INPUT_DIR}/${SAMPLE}_R2.trim.fastq.gz \
+            -o ${OUTPUT_DIR}/${SAMPLE} \
+            -t 4 \
+            -m 100 \
+            |& tee ${OUTPUT_DIR}/${SAMPLE}.spades.log || echo "${SAMPLE} failed"
+done
+```
+
