@@ -128,7 +128,7 @@ fastp --in1 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq.gz \
 ```
 nano
 ```
-#Create shebang scripts
+Create shebang scripts
 ```
 #!/bin/bash
 
@@ -156,13 +156,17 @@ To use this script, you can save it to a file (e.g., run_fastqc.sh), make it exe
 bash run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/
 ```
 11. Run fastp for all the samples
-a) First Pathway
+
+13. a) First Pathway
 ```
 #!/bin/bash
 
 #Set the input and output directories
 INPUT_DIR=./raw_data/Fastq/
 OUTPUT_DIR=./results/fastp/
+
+#load modules
+module load fastp/0.22.0
 
 #Loop through all files in the input directory
 for FILENAME in ${INPUT_DIR}*.fastq.gz; do
@@ -200,6 +204,9 @@ b) Second Pathway
 ```
 INPUT_DIR=./raw_data/Fastq/
 OUTPUT_DIR=./results/fastp/
+
+#load modules
+module load fastp/0.22.0
 
 for R1 in $INPUT_DIR/*R1_001.fastq.gz
 do
