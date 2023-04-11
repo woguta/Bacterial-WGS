@@ -180,12 +180,12 @@ for file in $FASTQ_DIR/*.fastq; do
         fastqc ${file} -o ${REPORT_DIR} -f fastq
         done
 ````
-To use this script, you can save it to a file (e.g., run_fastqc.sh), make it executable (chmod +x run_fastqc.sh), and then run it with the directory paths as arguments
+To use this script, you can save it to a file (e.g., run_fastqc.sh), make it executable (chmod +x run_fastqc1.sh), and then run it with the directory paths as arguments
 ```
-bash run_fastqc.sh ./results/fastqc/ ./raw_data/Fastq/
+bash run_fastqc1.sh ./results/fastqc/ ./raw_data/Fastq/
 ```
 
-#Running fastp for all the files/trimming all the files
+Running fastp for all the files/trimming all the files
 i) First Pathway
 ```
 #!/bin/bash
