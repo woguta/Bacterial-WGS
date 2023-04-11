@@ -33,14 +33,18 @@
 12. Metadata - linking genotypic data with phenotypic traits, Plasmids, Mutations etc
 
 # Steps
-1. Creating directory
+1. Log into hpc via ssh & interactive computing
+```
+interactive -w compute05 -c 3
+``` 
+2. Creating directory
 ```
 cd /var/scratch/
 mkdir -p $USER/bacteria-wgs/crpa
 cd $USER/bacteria-wgs/crpa
 
 ```
-2. Data retieval: 
+3. Data retieval: 
 Use scp username@remote:/path/to/data /path/to/local/directory
 ```
 scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
@@ -49,14 +53,14 @@ scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
 The -r option is used to copy the directory recursively. The . at the end of the command specifies the current directory as the destination.
 space fullstop " ." specifies your current folder.
 
-3. Viewing  the files: 
+4. Viewing  the files: 
  cd into current directory and view all the retrieved data by run
  ```
 less filename.fastq
 head -n 10 filename.fastq
 tail -n 10 filename.fastq
 ```
-4. Unzip .gz files: 
+5. Unzip .gz files: 
 Use the gunzip or gzip command depending on your system
 ```
 gunzip -k *.gz
@@ -71,7 +75,7 @@ gunzip *.gz
 ```
 View the files as in 3 above
 
-5 Load modules, cd database
+6 Load modules, cd database
 ```
 module load fastqc/0.11.9
 module load fastp/0.22.0
@@ -90,7 +94,7 @@ module load bcftools/1.13
 module load nextclade/2.11.0
 module load R/4.2
 ```
-6 Run fastqc on one sample
+7 Run fastqc on one sample
 ```
 fastqc
         -t 4
