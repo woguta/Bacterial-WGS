@@ -589,6 +589,7 @@ module load blast/2.12.0+
 ```
 cd ./results/blast
 ```
+i) For one sample
 ```
 blastn \
 -task megablast \
@@ -611,3 +612,40 @@ This is a command to run blastn with the megablast algorithm on the contigs.fast
 -num_threads 4: specifies the number of threads to be used for the search.
 -evalue 1e-25: sets the e-value threshold for reporting significant hits to 1e-25.
 -out ./results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out: specifies the output file for the BLASTN results.
+
+ii) Loop
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J blastn
+#SBATCH -n 4
+
+# Set the input directory
+input_dir="./results/spades"
+
+# Set the output directory
+output_dir="./results/blast"
+
+# Set the BLAST database path
+db_path="/export/data/bio/ncbi/blast/db/v5/nt"
+
+# Loop over all files in the input directory
+for file in "${input_dir}"/*.fasta; do
+    # Extract the filename without the extension
+    filename=$(basename "${file%.*}")
+    
+    # Perform the BLASTN search
+    blastn -task megablast \
+        -query "${file}" \
+        -db "${db_path}" \
+        -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
+        -culling_limit 5 \
+        -num_threads 2 \
+        -evalue 1e-25 \
+        -out "${output_dir}/${filename}.vs.nt.cul5.1e25.megablast.out"
+done
+```
+Save and run_blastn_search.sh
+```
+run_blast_search.sh
+```
