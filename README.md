@@ -385,11 +385,52 @@ ls -lht ./results/spades/contigs.fasta
 ```
 11.Genome Assessment 
 
-i) Genome contiguity - check qualities such length cutoff for the longest contigs that contain 50% of the total genome length. It is often measured as contig N50. i.e  involves evaluating the accuracy and completeness of the genome assembly using metrics such as N50 length, scaffold and contig numbers, and genome size. Tool used QUAST.
+i) Genome contiguity - checks length/cutoff for the longest contigs that contain 50% of the total genome length measured as contig N50. i.e  involves evaluating the accuracy and completeness of the genome assembly using metrics such as N50 length, scaffold and contig numbers, and genome size. Tool used QUAST.
+
+a) For one sample
 ```
 quast.py \
-/results/spades/contigs.fasta \
+./results/spades/contigs.fasta \
 -t 4 \
--o /results/quast
+-o ./results/quast
 ```
-ii) Genome completeness
+
+Inspect the quast report
+```
+
+```
+
+b) For all the samples
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Quast
+#SBATCH -n 4
+
+# Set the path to the directory containing the input files
+input_dir=./results/spades
+
+# Set the path to the directory where the output will be saved
+output_dir=./results/quast
+
+# Loop through all FASTA files in the input directory
+for file in ${input_dir}/*.fasta; do
+    filename=$(basename "$file")
+    output_path="${output_dir}/${filename%.*}"
+    
+    # Run the quast.py command on the current file
+    quast.py "$file" -t 4 -o "$output_path"
+done
+```
+
+ii) Genome completeness - assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. they're lacking or less then the genome is not complete.
+
+a) For one sample 
+```
+busco \
+-i ./results/spades/contigs.fasta \
+-m genome \
+-o AS-27566-C1_S5_L001_busco \
+-l bacteria \
+-c 4 \
+-f
