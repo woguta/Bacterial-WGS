@@ -334,6 +334,7 @@ run the job as saved
 sbatch -w compute05 run_fastqc_trim.sh
 ```
 9. Genome Assembly using SPAdes for the trimmed files
+
 i) for one sample
 ```
 spades.py -k 27 \
@@ -343,6 +344,7 @@ spades.py -k 27 \
 -t 4 \
 -m 100
 ```
+
 For all samples via loop
 ```
 #!/usr/bin/bash -l
@@ -373,4 +375,7 @@ do
             |& tee ${OUTPUT_DIR}/${SAMPLE}.spades.log || echo "${SAMPLE} failed"
 done
 ```
-
+run the loop as saved
+```
+ sbatch -w compute05 run_spades
+ ```
