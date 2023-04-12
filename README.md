@@ -483,7 +483,7 @@ mkdir -p ./results/busco/
 busco \
 -i ./results/spades/contigs.fasta \
 -m genome \
--o ./results/busco/AS-27566-C1_S5_L001_busco \
+-o AS-27566-C1_S5_L001_busco \
 -l bacteria \
 -c 4 \
 -f
