@@ -197,6 +197,9 @@ OUTPUT_DIR=./results/fastp/
 #load modules
 module load fastp/0.22.0
 
+# make output directory if it doesn't exist
+mkdir -p "${OUTPUT_DIR}"
+
 #Loop through all files in the input directory
 for R1 in $INPUT_DIR/*R1_001.fastq.gz
 do
@@ -236,6 +239,9 @@ module load fastp/0.22.0
 #making directories
 INPUT_DIR=./raw_data/Fastq/
 OUTPUT_DIR=./results/fastp/
+
+# make output directory if it doesn't exist
+mkdir -p "${OUTPUT_DIR}"
 
 for R1 in $INPUT_DIR/*R1_001.fastq.gz
 do
@@ -294,7 +300,7 @@ INPUT_DIR=./results/fastp
 OUTPUT_DIR=./results/fastqc
 
 # make output directory if it doesn't exist
-mkdir -p $OUTPUT_DIR
+mkdir -p "${OUTPUT_DIR}"
 
 # loop over all the trimmed fastq files in the input directory
 for file in $INPUT_DIR/*.trim.fastq.gz; do
@@ -344,7 +350,7 @@ INPUT_DIR=./results/fastp
 OUTPUT_DIR=./results/spades
 
 #make output directory
-mkdir -p ${OUTPUT_DIR}
+mkdir -p "${OUTPUT_DIR}"
 
 # Iterate over all files in input directory
 for file in ${INPUT_DIR}/*_R1.trim.fastq.gz
