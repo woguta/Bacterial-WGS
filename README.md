@@ -182,7 +182,7 @@ for file in $FASTQ_DIR/*.fastq; do
 ````
 To use this script, you can save it to a file (e.g., run_fastqc.sh), make it executable (chmod +x run_fastqc1.sh), and then run it with the directory paths as arguments
 ```
-bash run_fastqc1.sh ./results/fastqc/ ./raw_data/Fastq/
+bash run_fastqc1.sh
 ```
 
 Running fastp for all the files/trimming all the files
@@ -224,7 +224,7 @@ done
 ```
 Save and run
 ```
- sbatch -w compute05 run_fastp.sh
+ sbatch -w compute05 run_fastp1.sh
 ```
 iii) Second pathway sbatch - sunmitiing jobs to the cluster as you do other things (the best option)
 ```
