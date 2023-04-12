@@ -697,7 +697,38 @@ run_blastn.sh
 ```
 
 View the blast
-
-```less -S /var/scratch/$USER/bacteria-wgs/results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out
 ```
+less -S ./results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out
+```
+13. AMR Identification
 
+Use Resistance Gene Identifier (RGI) which applies Comprehensive Antibiotic Resistance Database (CARD) as a reference to predict antibiotic resistome(s) from protein or nucleotide data based on homology and SNP models.
+```
+module purge
+
+module load rgi/6.0.2
+```
+```
+cd ./results/rgi
+
+ln -s /var/scratch/global/bacteria-wgs/databases/localDB .
+```
+i) Rum AMR for one sample
+```
+# Perform RGI analysis
+
+rgi main --input_sequence ./results/spades/contigs.fasta \
+--output_file ./results/rgi/AS-27566-C1-C_S23_L001_rgi \
+--local \
+-a BLAST \
+-g PRODIGAL \
+--clean \
+--low_quality \
+--num_threads 4 \
+--split_prodigal_jobs
+	
+	
+# samples and AMR genes organized alphabetically:
+rgi heatmap --input ./results/rgi \
+--output ./results/rgi/AS-27566-C1-C_S23_L001_rgi_alphabetic.png
+```
