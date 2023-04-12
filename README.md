@@ -324,7 +324,7 @@ spades.py -k 27 \
 -m 100
 ```
 k-mer size: 27 (-k 27)
-Input read files: SRR292862_1.trim.fastq.gz and SRR292862_2.trim.fastq.gz (-1 and -2)
+Input read files: AS-27566-C1_S5_L001.R1.trim.fastq.gz and AS-27566-C1_S5_L001.R2.trim.fastq.gz (-1 and -2)
 Output directory: ./results/spades (-o)
 Number of threads: 4 (-t 4)
 Memory limit: 100 GB (-m 100)
