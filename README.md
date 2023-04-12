@@ -376,11 +376,15 @@ run the loop saved as run_spades.sh
 
 i) sequence/contigs
 ```
-ls -lht ./results/spades/contigs.fasta
+less -S ./results/spades/contigs.fasta
 ```
 ii) First 10 files/head
 ```
-grep '>' contigs.fasta | head
+grep '>' ./results/spades/contigs.fasta | head
+```
+iii) Check thru
+```
+cat ./results/spades/contigs.fasta
 ```
 11.Genome Assessment [input file contigs.fasta)
 
