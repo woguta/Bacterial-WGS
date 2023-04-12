@@ -673,5 +673,5 @@ done
 ```
 Save and run_blastn_search.sh
 ```
-run_blast_search.sh
+run_blastn.sh
 ```
