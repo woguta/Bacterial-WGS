@@ -778,3 +778,9 @@ do
 done
 ```
 This script will loop over all files in the input directory with the extension .fasta, extract the sample name from the file name, perform RGI analysis on each file, and generate a heatmap for the AMR genes. The output files will be saved in the output directory with the sample name and appropriate extensions.
+
+Summarize the results using rgi tab
+```
+rgi tab --input ./results/rgi/AS-27566-C1-C_S23_L001_rgi.txt --output ./results/rgi/AS-27566-C1-C_S23_L001_rgi_summary.tsv
+```
+This creates a tab-delimited file named AS-27566-C1-C_S23_L001_rgi_summary.tsv in the ./results/rgi/ directory. The file is viewd in a text editor or spreadsheet software like Microsoft Excel or Google Sheets. The file contains information about the predicted AMR genes in the sample, including their names, types, and percent identity.
