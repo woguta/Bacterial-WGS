@@ -479,7 +479,7 @@ i) Using genome ref
 busco \
 -i ./results/spades/contigs.fasta \
 -m genome \
--o AS-27566-C1_S5_L001_busco \
+-o ./results/busco/AS-27566-C1_S5_L001_busco \
 -l bacteria \
 -c 4 \
 -f
@@ -516,25 +516,31 @@ b) Loop for all files?
 #SBATCH -J BUSCO
 #SBATCH -n 4
 
-# Set the path to the directory containing the input files
-input_dir=./results/spades
+# Load modules
+module load busco/5.2.2
 
-# Set the path to the directory where the output will be saved
-output_dir=./results/busco
+# Define input and output directories
+INPUT_DIR=./results/spades
+OUTPUT_DIR=./results/busco
 
-# Set the path to the BUSCO lineage-specific database
-database=bacteria_odb10
+#make output directory if it doesn't exist
+mkdir -p "${OUTPUT_DIR}"
 
-# Make the output directory if it doesn't exist
-mkdir -p "${output_dir}"
+# Run BUSCO on all files in input directory
+for file in ${INPUT_DIR}/*.fasta
+do
+  # Extract sample name from file name
+  SAMPLE=$(basename "${file}" .fasta)
 
-# Loop through all FASTA files in the input directory
-for file in ${input_dir}/*.fasta; do
-    filename=$(basename "$file")
-    output_path="${output_dir}/${filename%.*}"
-    
-    # Run the BUSCO command on the current file
-    busco -i "$file" -m bacteria -o "$output_path" -l "$database" -c 4 -f
+  # Run BUSCO
+  busco \
+    -i ${file} \
+    -m genome \
+    -o ${OUTPUT_DIR}/${SAMPLE}_busco \
+    -l bacteria \
+    -c 4 \
+    -f \
+    |& tee ${OUTPUT_DIR}/${SAMPLE}_busco.log || echo "${SAMPLE} failed"
 done
 ```
 Save & run_busco.sh
