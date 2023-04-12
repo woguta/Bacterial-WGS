@@ -715,7 +715,7 @@ ln -s /var/scratch/global/bacteria-wgs/databases/localDB .
 ```
 This creates symbolic link to the RGI database located in /var/scratch/global/bacteria-wgs/databases/localDB in the ./results/rgi directory using the ln -s command, to be used as a reference database for RGI for comparison against the contigs or assembled genomes fromthe bacterial WGS data to identify antibiotic resistance genes.
 
-i) Rum AMR for one sample
+i) Run AMR for one sample
 ```
 # Perform RGI analysis
 
@@ -733,4 +733,47 @@ rgi main --input_sequence ./results/spades/contigs.fasta \
 # samples and AMR genes organized alphabetically:
 rgi heatmap --input ./results/rgi \
 --output ./results/rgi/AS-27566-C1-C_S23_L001_rgi_alphabetic.png
+```
+The first command is using the rgi main command to run RGI analysis on the assembled contigs file (./results/spades/contigs.fasta). The results will be saved in a file called AS-27566-C1-C_S23_L001_rgi in the ./results/rgi directory. The --local option indicates that the local database will be used, the -a BLAST option specifies the use of BLAST algorithm for homology searches, and the -g PRODIGAL option specifies the use of PRODIGAL for gene prediction. The --clean and --low_quality options are used for quality control, and the --split_prodigal_jobs option is used to split the gene prediction jobs into multiple threads to speed up the process.
+
+The second command is using the rgi heatmap command to generate a heatmap of the RGI results. The --input option specifies the directory where the RGI results are saved, and the --output option specifies the file name and location of the heatmap image. The heatmap will be organized alphabetically by sample and AMR gene. The resulting image will be saved as a PNG file in the ./results/rgi directory with the name AS-27566-C1-C_S23_L001_rgi_alphabetic.png.
+
+Loop for all samples
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J rgi
+#SBATCH -n 4
+
+# Load modules
+module load rgi/5.1.0
+
+# Define input and output directories
+INPUT_DIR=./results/spades
+OUTPUT_DIR=./results/rgi
+
+# Create output directory if it does not exist
+mkdir -p ${OUTPUT_DIR}
+
+# Iterate over all files in input directory
+for file in ${INPUT_DIR}/*.fasta
+do
+  # Extract sample name from file name
+  SAMPLE=$(basename "${file}" .fasta)
+  
+  # Perform RGI analysis
+  rgi main --input_sequence ${file} \
+  --output_file ${OUTPUT_DIR}/${SAMPLE}_rgi \
+  --local \
+  -a BLAST \
+  -g PRODIGAL \
+  --clean \
+  --low_quality \
+  --num_threads 4 \
+  --split_prodigal_jobs
+
+  # Generate heatmap for AMR genes
+  rgi heatmap --input ${OUTPUT_DIR}/${SAMPLE}_rgi \
+  --output ${OUTPUT_DIR}/${SAMPLE}_rgi_heatmap.png
+done
 ```
