@@ -777,3 +777,4 @@ do
   --output ${OUTPUT_DIR}/${SAMPLE}_rgi_heatmap.png
 done
 ```
+This script will loop over all files in the input directory with the extension .fasta, extract the sample name from the file name, perform RGI analysis on each file, and generate a heatmap for the AMR genes. The output files will be saved in the output directory with the sample name and appropriate extensions.
