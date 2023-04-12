@@ -343,6 +343,9 @@ module load spades/3.15
 INPUT_DIR=./results/fastp
 OUTPUT_DIR=./results/spades
 
+#make output directory
+mkdir -p ${OUTPUT_DIR}
+
 # Iterate over all files in input directory
 for file in ${INPUT_DIR}/*_R1.trim.fastq.gz
 do
@@ -416,6 +419,9 @@ input_dir=./results/spades
 
 # Set the path to the directory where the output will be saved
 output_dir=./results/quast
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
 
 # Loop through all FASTA files in the input directory
 for file in ${input_dir}/*.fasta; do
@@ -509,6 +515,9 @@ output_dir=./results/busco
 # Set the path to the BUSCO lineage-specific database
 database=bacteria_odb10
 
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
 # Loop through all FASTA files in the input directory
 for file in ${input_dir}/*.fasta; do
     filename=$(basename "$file")
@@ -573,6 +582,9 @@ input_dir=./results/spades
 # Set the path to the directory where the output will be saved
 output_dir=./results/prokka
 
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
 # Loop through all FASTA files in the input directory
 for file in ${input_dir}/*.fasta; do
     filename=$(basename "$file")
@@ -633,6 +645,9 @@ output_dir="./results/blast"
 
 # Set the BLAST database path
 db_path="/export/data/bio/ncbi/blast/db/v5/nt"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
 
 # Loop over all files in the input directory
 for file in "${input_dir}"/*.fasta; do
