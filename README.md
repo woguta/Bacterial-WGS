@@ -551,7 +551,7 @@ The input_dir and output_dir variables are set to the input and output directori
  
 III) Genome annotation
 
-In genome annotation, the goal is to identify and label the features of on a genome sequence.
+In genome annotation, the goal is to identify and label the features of/on a genome sequence.
 
 First, unload the modules to avoid conflict between the loaded dependencies
 ```
