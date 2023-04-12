@@ -498,7 +498,7 @@ This command will run BUSCO on the contigs.fasta file using the "bacteria_odb10"
 
 i) View short summary 
 ```
-less -S AS-27566-C1-C_S23_L001_busco/short_summary.specific.bacteria_odb10.AS-27566-C1-C_S23_L001_busco.txt
+less -S AS-27566-C1_S5_L001_busco/short_summary.specific.bacteria_odb10.AS-27566-C1_S5_L001_busco.txt
 ```
 
 ii) View full summary 
@@ -507,7 +507,7 @@ less -S AS-27566-C1-C_S23_L001_busco/run_bacteria_odb10/full_table.tsv
 ```
 iii) List and view a amino acid of protein sequence
 ```
-ls AS-27566-C1-C_S23_L001_busco/run_bacteria_odb10/busco_sequences/
+ls AS-27566-C1_S5_L001_busco/run_bacteria_odb10/busco_sequences/
 ```
 b) Loop for all files?
 ```
