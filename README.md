@@ -503,11 +503,11 @@ less -S AS-27566-C1_S5_L001_busco/short_summary.specific.bacteria_odb10.AS-27566
 
 ii) View full summary 
 ```
-less -S AS-27566-C1-C_S23_L001_busco/run_bacteria_odb10/full_table.tsv
+ less -S AS-27566-C1_S5_L001_busco/run_bacteria_odb10/full_table.tsv
 ```
 iii) List and view a amino acid of protein sequence
 ```
-ls AS-27566-C1_S5_L001_busco/run_bacteria_odb10/busco_sequences/
+ ls -lht AS-27566-C1_S5_L001_busco/run_bacteria_odb10/busco_sequences/
 ```
 b) Loop for all files?
 ```
