@@ -474,12 +474,8 @@ Assesses the presence or absence of highly conserved genes (orthologs) in an ass
 
 I) For one sample 
 
-i) Using genome ref
+i) Using genome search (used here)
 ```
-#make directory 
-
-mkdir -p ./results/busco/
-
 busco \
 -i ./results/spades/contigs.fasta \
 -m genome \
