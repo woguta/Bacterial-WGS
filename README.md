@@ -476,6 +476,10 @@ I) For one sample
 
 i) Using genome ref
 ```
+#make directory 
+
+mkdir -p ./results/busco/
+
 busco \
 -i ./results/spades/contigs.fasta \
 -m genome \
