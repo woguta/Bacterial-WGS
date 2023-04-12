@@ -685,3 +685,9 @@ Save and run_blastn_search.sh
 ```
 run_blastn.sh
 ```
+
+View the blast
+
+```less -S /var/scratch/$USER/bacteria-wgs/results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out
+```
+
