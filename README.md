@@ -581,6 +581,16 @@ Protein abundance
 ```
 grep -o "product=.*" L_*.gff | sed 's/product=//g' | sort | uniq -c | sort -nr > protein_abundances.txt
 ```
+This command searches for the string "product=" in all files in the current directory that start with "L_" and have the extension ".gff". Then it uses the sed command to remove the string "product=" from each line of output. The resulting lines are sorted, counted, sorted in reverse numerical order, and finally written to a file called "protein_abundances.txt".
+
+To break it down further, here's what each part of the command does:
+grep -o "product=.*" L_*.gff: searches for the string "product=" in all files that match the pattern "L_*.gff", and outputs only the matching parts of the lines.
+sed 's/product=//g': removes the string "product=" from each line of output.
+sort: sorts the lines of output alphabetically.
+uniq -c: counts the number of occurrences of each unique line of output.
+sort -nr: sorts the lines of output by the count, in reverse numerical order (i.e., highest count first).
+> protein_abundances.txt: writes the output to a file called "protein_abundances.txt".
+
 View protein abundances
 ```
 less -S protein_abundances.txt
