@@ -753,7 +753,7 @@ INPUT_DIR=./results/spades
 OUTPUT_DIR=./results/rgi
 
 # Create output directory if it does not exist
-mkdir -p ${OUTPUT_DIR}
+mkdir -p "${OUTPUT_DIR}"
 
 # Iterate over all files in input directory
 for file in ${INPUT_DIR}/*.fasta
