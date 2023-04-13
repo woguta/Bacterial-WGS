@@ -742,11 +742,11 @@ Loop for all samples
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J rgi
+#SBATCH -J RGI
 #SBATCH -n 4
 
 # Load modules
-module load rgi/5.1.0
+module load rgi/6.0.2
 
 # Define input and output directories
 INPUT_DIR=./results/spades
