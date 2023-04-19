@@ -784,4 +784,37 @@ rgi tab --input ./results/rgi/AS-27566-C1-C_S23_L001_rgi.txt --output ./results/
 ```
 This creates a tab-delimited file named AS-27566-C1-C_S23_L001_rgi_summary.tsv in the ./results/rgi/ directory. The file is viewd in a text editor or spreadsheet software like Microsoft Excel or Google Sheets. The file contains information about the predicted AMR genes in the sample, including their names, types, and percent identities.
 
+14. Identification of virulence factors
+
+The ability of a bacterium to colonise a host and contribute to its pathogenecity, or ability to cause disease, are known as virulence factors. In order to gather data regarding the virulence factors of bacterial pathogens, we will make use of the virulence factor database (VFDB), which is an integrated and comprehensive resource. We will scan through our contigs against the VFDB quickly to find any sequences that include known virulence factors.
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J blast_vf
+#SBATCH -n 4
+
+#module purge
+module purge
+
+# Load modules
+module load blast/2.11.0
+
+# Define input and output directories
+INPUT_DIR=./results/spades
+OUTPUT_DIR=./results/blast
+
+# Create output directory if it does not exist
+mkdir -p "${OUTPUT_DIR}"
+
+# Run BLAST
+blastn \
+    -query ${INPUT_DIR}/contigs.fasta \
+    -db /var/scratch/${USER}/bacteria-wgs/databases/VFDB/vfdb_seta_nt \
+    -out ${OUTPUT_DIR}/virulence_factors_blast_VFDB.out \
+    -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
+    -num_threads 4
+```
+
+
 
