@@ -815,6 +815,10 @@ blastn \
     -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
     -num_threads 4
 ```
-
+-query: specifies the input query file in fasta format.
+-db: specifies the path to the VFDB blast database to be used for the search.
+-out: specifies the output file name and location for the blast results.
+-outfmt: specifies the format of the output file. In this case, it is set to format 6, which provides a tab-delimited output containing the query ID, subject taxonomy ID, bit score, standard deviation of the bit score, subject scientific name, subject kingdom, and subject title.
+-num_threads: specifies the number of threads to be used for the search. In this case, it is set to 4.
 
 
