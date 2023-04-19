@@ -1,5 +1,5 @@
 # Analysis of llumina WGS data
-## A. Illumina Pipeline
+## Illumina Pipeline
 1. Data acqusition in fastq format and unzipping
 2. Quality control (QC) of raw data: This step involves checking the quality of the raw sequencing data using quality control software, such as FastQC/MultiQC, to assess the overall quality, sequence length distribution, base quality, and sequence duplication.
 
