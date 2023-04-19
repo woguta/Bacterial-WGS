@@ -108,6 +108,13 @@ Save as run_fastqc and execute
 ```
 sbatch -w compute05 run_fastqc
 ```
+Copy to tour working directory and then to home directory
+```
+cp ./results/fastqc/barcode02.all_fastqc.html ~/
+```
+```
+scp woguta@hpc.ilri.cgiar.org:*.all_fastqc.html .
+```
 6. Trimmimg
 Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
 
