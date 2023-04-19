@@ -1,4 +1,4 @@
-# The ONT WGS (Whole Genome Sequencing) bacterial pipeline
+# The ONT WGS pipeline
 
 Is a bioinformatics pipeline designed for analyzing bacterial genomes using Oxford Nanopore Technologies (ONT) sequencing data. The pipeline includes several steps, which are outlined below:
 
