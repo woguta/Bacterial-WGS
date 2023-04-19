@@ -70,3 +70,11 @@ module load R/4.2
 module load prokka/1.11
 module load blast/2.12.0+
 ```
+5. Run fastqc on two samples
+```
+fastqc
+        -t 4
+        -o ./results/fastqc/
+        -f fastq ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq
+                ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.fastq
+```
