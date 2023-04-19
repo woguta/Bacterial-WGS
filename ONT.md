@@ -4,7 +4,7 @@ Is a bioinformatics pipeline designed for analyzing bacterial genomes using Oxfo
 
 1.  Basecalling: Raw ONT sequencing data (in the form of electrical signals) are converted into nucleotide sequences using basecalling algorithms such as Guppy.
 
-2.  Quality control: The quality of the basecalled sequences is assessed using tools such as FastQC and NanoPlot. Sequences with poor quality are filtered out.
+2.  Quality control: The quality of the basecalled sequences is assessed using tools such as FastQC or NanoPlot. Sequences with poor quality are filtered out. Here NanoPlot is used
 
 3.  Assembly: The filtered sequences are assembled into contigs using a variety of tools such as Flye, Canu, and Shasta.
 
@@ -118,7 +118,24 @@ scp woguta@hpc.ilri.cgiar.org:*.all_fastqc.html .
 ```
 explorer.exe .
 ```
-6. Trimmimg
+6. Quality Control using NanoPlot
+Install Nanoplpot
+```
+pip install NanoPlot
+```
+Upgrade
+```
+pip install NanoPlot --upgrade
+```
+or install the latest nanoplot version at once
+```
+pip3 install nanoplot
+```
+to update pip3
+```
+pip3 install --upgrade pip
+```
+8. Trimmimg
 Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
 
 Porechop: Porechop is a tool designed to trim adapters from ONT reads. It can also perform size selection and quality filtering.
