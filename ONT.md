@@ -48,3 +48,25 @@ scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
 
 The -r option is used to copy the directory recursively. The . at the end of the command specifies the current directory as the destination. space fullstop " ." specifies your current folder.
 
+4. Load modules
+```
+module load fastqc/0.11.9
+module load fastp/0.22.0
+module load krona/2.8.1
+module load centrifuge/1.0.4
+module load kraken/2.1.2
+module load spades/3.15
+module load quast/5.0.2
+module load samtools/1.15.1
+module load BUSCO/5.2.2
+module load bowtie2/2.5.0
+module load bedtools/2.29.0
+module load bamtools/2.5.1
+module load ivar/1.3.1
+module load snpeff/4.1g
+module load bcftools/1.13
+module load nextclade/2.11.0
+module load R/4.2
+module load prokka/1.11
+module load blast/2.12.0+
+```
