@@ -78,3 +78,17 @@ fastqc
         -f fastq ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R1_001.fastq
                 ./raw_data/Fastq/AS-26335-C1-C_S4_L001_R2_001.fastq
 ```
+6. Trimmimg
+Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
+
+Porechop: Porechop is a tool designed to trim adapters from ONT reads. It can also perform size selection and quality filtering.
+
+NanoFilt: NanoFilt is a tool for filtering and trimming ONT reads based on quality scores, read length, and other parameters.
+
+Filtlong: Filtlong is a tool for filtering and trimming long reads, including ONT reads, based on quality scores, length, and identity to a reference.
+
+LongQC: LongQC is a tool that provides quality control metrics for long-read sequencing data, including ONT reads. It can also perform filtering and trimming based on read length and quality scores.
+
+PycoQC: PycoQC is a tool that provides quality control metrics for ONT sequencing data. It can also trim reads based on quality scores.
+
+Nanopack: Nanopack is a collection of tools for analyzing ONT sequencing data, including tools for quality control, filtering, and trimming.
