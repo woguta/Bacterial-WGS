@@ -1,11 +1,12 @@
 
-##Steps
-#Log into hpc via ssh & interactive computing
+## Steps
+
+# Log into hpc via ssh & interactive computing
 ```
 interactive -w compute05 -c 3
 ```
 
-#Creating directory
+# 1.  Creating directory
 ```
 cd /var/scratch/
 mkdir -p $USER/bacteria-wgs/flair
@@ -16,7 +17,7 @@ The mkdir -p command is used to create a directory and its parent directories (i
 
 The -p option allows the mkdir command to create the parent directories if they do not exist.
 
-Data retieval: Use scp username@remote:/path/to/data /path/to/local/directory
+# 2.  Data retieval: Use scp username@remote:/path/to/data /path/to/local/directory
 ```
 scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
 ```
