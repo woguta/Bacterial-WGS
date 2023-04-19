@@ -22,12 +22,12 @@ Is a bioinformatics pipeline designed for analyzing bacterial genomes using Oxfo
 
 # Steps
 
-# Log into hpc via ssh & interactive computing
+1.  Log into hpc via ssh & interactive computing
 ```
 interactive -w compute05 -c 3
 ```
 
-# 1.  Creating directory
+2.  Creating directory
 ```
 cd /var/scratch/
 mkdir -p $USER/bacteria-wgs/flair
@@ -38,7 +38,7 @@ The mkdir -p command is used to create a directory and its parent directories (i
 
 The -p option allows the mkdir command to create the parent directories if they do not exist.
 
-# 2.  Data retieval
+3.  .  Data retrieval
 
 Use scp username@remote:/path/to/data /path/to/local/directory
 
