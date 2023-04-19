@@ -72,11 +72,12 @@ module load blast/2.12.0+
 ```
 5. Run fastqc on two samples
 ```
-fastqc
-        -t 4
+fastqc \
+        -t 4 \
+        --extract \
         -o ./results/fastqc/
         -f fastq ./raw_data/merged_fastq_pass/barcode02.all.fastq \
-                ./raw_data/merged_fastq_pass/barcode48.all.fastq
+                 ./raw_data/merged_fastq_pass/barcode48.all.fastq
 ```
 6. Trimmimg
 Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
