@@ -75,7 +75,7 @@ module load blast/2.12.0+
 fastqc \
         -t 4 \
         --extract \
-        -o ./results/fastqc/
+        -o ./results/fastqc \
         -f fastq ./raw_data/merged_fastq_pass/barcode02.all.fastq \
                  ./raw_data/merged_fastq_pass/barcode48.all.fastq
 ```
