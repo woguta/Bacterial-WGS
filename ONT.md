@@ -1,5 +1,5 @@
 
-## Steps
+# Steps
 
 # Log into hpc via ssh & interactive computing
 ```
