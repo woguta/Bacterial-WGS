@@ -810,7 +810,7 @@ mkdir -p "${OUTPUT_DIR}"
 # Run BLAST
 blastn \
     -query ${INPUT_DIR}/contigs.fasta \
-    -db /var/scratch/${USER}/bacteria-wgs/databases/VFDB/vfdb_seta_nt \
+    -db /var/scratch/global/bacteria-wgs/databases/VFDB/vfdb_seta_nt \
     -out ${OUTPUT_DIR}/virulence_factors_blast_VFDB.out \
     -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
     -num_threads 4
