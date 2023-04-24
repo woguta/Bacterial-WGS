@@ -140,6 +140,9 @@ If errors are observed/can't download, then install psyam first then nanoplot af
 ```
 conda install -c bioconda pysam
 ```
+```
+conda install -c bioconda nanoplot
+```
 8. Trimmimg
 Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
 
