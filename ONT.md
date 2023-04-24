@@ -154,3 +154,41 @@ LongQC: LongQC is a tool that provides quality control metrics for long-read seq
 PycoQC: PycoQC is a tool that provides quality control metrics for ONT sequencing data. It can also trim reads based on quality scores.
 
 Nanopack: Nanopack is a collection of tools for analyzing ONT sequencing data, including tools for quality control, filtering, and trimming.
+
+i) Run two samples
+```
+nanoplot \
+    -t 4 \
+    --fastq \
+    ./raw_data/merged_fastq_pass/barcode02.all.fastq \
+    ./raw_data/merged_fastq_pass/barcode48.all.fastq \
+    -o ./results/nanoplot/ \
+    --plots dot
+```
+ii) Loop for all samples
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J nanoplot
+#SBATCH -n 4
+
+# Set the input and output directories
+INPUT_DIR=./raw_data/merged_fastq_pass/
+OUTPUT_DIR=./results/nanoplot/
+
+# Make directory to store the results
+mkdir -p "$OUTPUT_DIR"
+
+# Load the nanoplot module
+module load nanoplot
+
+# Run nanoplot on all fastq files in the input directory
+for file in $INPUT_DIR/*.fastq; do
+    nanoplot \
+        -t 4 \
+        --fastq \
+        $file \
+        -o $OUTPUT_DIR \
+        --plots dot
+done
+```
