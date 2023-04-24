@@ -160,6 +160,8 @@ Nanopack: Nanopack is a collection of tools for analyzing ONT sequencing data, i
 
 i) Run two samples
 ```
+# Add nanoplot path to PATH variable
+export PATH="$PATH:~/nanoplot"
 nanoplot \
     -t 4 \
     --fastq \
@@ -181,6 +183,9 @@ OUTPUT_DIR=./results/nanoplot/
 
 # Make directory to store the results
 mkdir -p "$OUTPUT_DIR"
+
+# Add nanoplot path to PATH variable
+export PATH="$PATH:~/nanoplot"
 
 # Loop through all fastq files in input directory
 for file in $INPUT_DIR/*.fastq; do
