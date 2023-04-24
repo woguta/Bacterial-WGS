@@ -179,13 +179,14 @@ OUTPUT_DIR=./results/nanoplot/
 # Make directory to store the results
 mkdir -p "$OUTPUT_DIR"
 
-# Run nanoplot on all fastq files in the input directory
+# Loop through all fastq files in input directory
 for file in $INPUT_DIR/*.fastq; do
-    nanoplot \
-        -t 4 \
-        --fastq \
-        $file \
-        -o $OUTPUT_DIR \
-        --plots dot
+    # Get filename without extension
+    filename=$(basename "$file" .fastq)
+    # Run nanoplot with 4 threads and output to results directory
+    nanoplot --threads 4 --outdir $OUTPUT_DIR $file
+    # Move generated plots to a subdirectory
+    mkdir -p $OUTPUT_DIR/plots
+    mv $OUTPUT_DIR/$filename* $OUTPUT_DIR/plots/
 done
 ```
