@@ -135,13 +135,20 @@ to update pip3
 ```
 pip3 install --upgrade pip
 ```
-
+check for the path and storage of the nanoplot
+```
+pip show nanoplot
+```
 If errors are observed/can't download, then install psyam first then nanoplot after
 ```
 conda install -c bioconda pysam
 ```
 ```
 conda install -c bioconda nanoplot
+```
+check the nanoplot 
+```
+conda info nanoplot
 ```
 8. Trimmimg
 Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
