@@ -179,9 +179,6 @@ OUTPUT_DIR=./results/nanoplot/
 # Make directory to store the results
 mkdir -p "$OUTPUT_DIR"
 
-# Load the nanoplot module
-module load nanoplot
-
 # Run nanoplot on all fastq files in the input directory
 for file in $INPUT_DIR/*.fastq; do
     nanoplot \
