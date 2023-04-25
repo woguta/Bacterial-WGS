@@ -148,10 +148,6 @@ conda install -c bioconda nanoplot
 ```
 check the nanoplot 
 ```
-conda info nanoplot
-```
-or
-```
 conda list nanoplot
 ```
 8. Trimmimg
