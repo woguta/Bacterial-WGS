@@ -150,6 +150,10 @@ check the nanoplot
 ```
 conda info nanoplot
 ```
+or
+```
+conda list nanoplot
+```
 8. Trimmimg
 Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
 
