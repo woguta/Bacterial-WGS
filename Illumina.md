@@ -344,6 +344,9 @@ For all samples via loop
 #SBATCH -J SPAdes
 #SBATCH -n 4
 
+#module purge
+module purge
+
 # Load modules
 module load spades/3.15
 
@@ -360,13 +363,15 @@ do
   # Extract sample name from file name
   SAMPLE=$(basename "${file}" _R1.trim.fastq.gz)
 
-  # Run spades.py
+ # Run spades.py
   spades.py -k 27 \
             -1 ${INPUT_DIR}/${SAMPLE}_R1.trim.fastq.gz \
             -2 ${INPUT_DIR}/${SAMPLE}_R2.trim.fastq.gz \
             -o ${OUTPUT_DIR}/${SAMPLE} \
             -t 4 \
             -m 100 \
+            --only-assembler \
+            --careful \
             |& tee ${OUTPUT_DIR}/${SAMPLE}.spades.log || echo "${SAMPLE} failed"
 done
 ```
