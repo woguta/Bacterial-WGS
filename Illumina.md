@@ -344,7 +344,7 @@ For all samples via loop
 #SBATCH -J SPAdes
 #SBATCH -n 4
 
-#module purge
+# module purge
 module purge
 
 # Load modules
