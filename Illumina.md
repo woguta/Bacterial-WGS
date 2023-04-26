@@ -358,13 +358,13 @@ OUTPUT_DIR=./results/spades
 mkdir -p "${OUTPUT_DIR}"
 
 # Iterate over all files in input directory
-for file in ${INPUT_DIR}/*_R1.trim.fastq.gz
+for file in ${INPUT_DIR}/*.R1.trim.fastq.gz
 do
   # Extract sample name from file name
-  SAMPLE=$(basename "${file}" _R1.trim.fastq.gz)
+  SAMPLE=$(basename "${file}" .R1.trim.fastq.gz)
 
 # Check if the corresponding read 2 file exists
-  file2=${INPUT_DIR}/${SAMPLE}_R2.trim.fastq.gz
+  file2=${INPUT_DIR}/${SAMPLE}.R2.trim.fastq.gz
   if [ ! -f ${file2} ]; then
     echo "Error: ${file2} not found!"
     continue
@@ -375,8 +375,8 @@ do
   
  # Run spades.py
   spades.py -k 27 \
-            -1 ${INPUT_DIR}/${SAMPLE}_R1.trim.fastq.gz \
-            -2 ${INPUT_DIR}/${SAMPLE}_R2.trim.fastq.gz \
+            -1 ${INPUT_DIR}/${SAMPLE}.R1.trim.fastq.gz \
+            -2 ${INPUT_DIR}/${SAMPLE}.R2.trim.fastq.gz \
             -o ${OUTPUT_DIR}/${SAMPLE} \
             -t 4 \
             -m 100 \
