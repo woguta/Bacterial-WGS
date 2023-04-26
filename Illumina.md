@@ -232,6 +232,9 @@ iii) Second pathway sbatch - sunmitiing jobs to the cluster as you do other thin
 #SBATCH -J fastp
 #SBATCH -n 4
 
+#module purge
+module purge
+
 #load modules
 module load fastp/0.22.0
 
