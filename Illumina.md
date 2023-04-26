@@ -370,8 +370,6 @@ do
             -o ${OUTPUT_DIR}/${SAMPLE} \
             -t 4 \
             -m 100 \
-            --only-assembler \
-            --careful \
             |& tee ${OUTPUT_DIR}/${SAMPLE}.spades.log || echo "${SAMPLE} failed"
 done
 ```
