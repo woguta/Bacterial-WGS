@@ -363,6 +363,13 @@ do
   # Extract sample name from file name
   SAMPLE=$(basename "${file}" _R1.trim.fastq.gz)
 
+# Check if the corresponding read 2 file exists
+  file2=${INPUT_DIR}/${SAMPLE}_R2.trim.fastq.gz
+  if [ ! -f ${file2} ]; then
+    echo "Error: ${file2} not found!"
+    continue
+  fi
+  
  # Run spades.py
   spades.py -k 27 \
             -1 ${INPUT_DIR}/${SAMPLE}_R1.trim.fastq.gz \
