@@ -370,6 +370,9 @@ do
     continue
   fi
   
+  # Make output directory for this sample
+  mkdir -p "${OUTPUT_DIR}/${SAMPLE}"
+  
  # Run spades.py
   spades.py -k 27 \
             -1 ${INPUT_DIR}/${SAMPLE}_R1.trim.fastq.gz \
