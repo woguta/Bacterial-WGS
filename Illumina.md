@@ -34,7 +34,7 @@
 # Steps
 1. Log into hpc via ssh & interactive computing
 ```
-interactive -w compute05 -c 3
+interactive -w compute06 -c 3
 ``` 
 2. Creating directory
 ```
@@ -223,7 +223,7 @@ done
 ```
 Save and run
 ```
- sbatch -w compute05 run_fastp1.sh
+ sbatch -w compute06 run_fastp1.sh
 ```
 iii) Second pathway sbatch - sunmitiing jobs to the cluster as you do other things (the best option)
 ```
@@ -269,7 +269,7 @@ done
 run the job as saved
 
 ```
-sbatch -w compute05 run_fastp2.sh
+sbatch -w compute06 run_fastp2.sh
 ```
 Checking the submitted job
 ```
@@ -318,7 +318,7 @@ done
 run the job as saved
 
 ```
-sbatch -w compute05 run_fastqc_trim.sh
+sbatch -w compute06 run_fastqc_trim.sh
 ```
 9. Genome Assembly using SPAdes for the trimmed files
 
@@ -385,7 +385,7 @@ done
 ```
 run the loop saved as run_spades.sh
 ```
- sbatch -w compute05 run_spades.sh
+ sbatch -w compute06 -c 4 run_spades_allsamples.sh
  ```
 10. View the fasta files
 
