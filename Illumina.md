@@ -678,6 +678,12 @@ ii) Loop
 #SBATCH -J blastn
 #SBATCH -n 4
 
+#module purge to avoid clashing
+module purge
+
+#module load
+module load blast/2.12.0+
+
 # Set the input directory
 input_dir="./results/spades"
 
