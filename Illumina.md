@@ -754,7 +754,7 @@ for file in "${input_dir}"/*.fasta; do
   
     # Perform the BLASTN search on scaffold.fasta
     blastn -task megablast \
-           -query "${input_dir}/${filename}.scaffold.fasta" \
+           -query "${input_dir}/${filename}/scaffold.fasta" \
            -db "${db_path}" \
            -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
            -culling_limit 5 \
@@ -764,7 +764,7 @@ for file in "${input_dir}"/*.fasta; do
 
     # Perform the BLASTN search on contigs.fasta
     blastn -task megablast \
-           -query "${input_dir}/${filename}.contigs.fasta" \
+           -query "${input_dir}/${filename}/contigs.fasta" \
            -db "${db_path}" \
            -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
            -culling_limit 5 \
