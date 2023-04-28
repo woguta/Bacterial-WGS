@@ -697,7 +697,7 @@ db_path="/export/data/bio/ncbi/blast/db/v5/nt"
 mkdir -p "${output_dir}"
 
 # Loop over all files in the input directory
-for file in "${input_dir}"/*contigs.fasta; do
+for file in "${input_dir}"/contigs.fasta; do
     # Extract the filename without the extension
     filename=$(basename "${file%.*}")
     
