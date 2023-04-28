@@ -637,7 +637,7 @@ done
 ```
 Save and run
 ```
- sbatch -w compute05 run_prokka.sh
+ sbatch -w compute05 c4 run_prokka.sh
  ```
 
 12. Species Identification
@@ -719,7 +719,7 @@ Save and run_blastn_search.sh
 ```
 run_blastn.sh
 ```
-iii) Doinf all the *.contigs.fasta & *.scaffold.fasta
+iii) Doing all the *.contigs.fasta & *.scaffold.fasta
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
