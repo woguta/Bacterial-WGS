@@ -697,12 +697,12 @@ db_path="/export/data/bio/ncbi/blast/db/v5/nt"
 mkdir -p "${output_dir}"
 
 # Loop over all files in the input directory
-for file in "${input_dir}"/*.fasta; do
+for file in "${input_dir}"/*contigs.fasta; do
     # Extract the filename without the extension
     filename=$(basename "${file%.*}")
     
 # Make output directory for this sample
- mkdir -p "${OUTPUT_DIR}/${SAMPLE}"
+ mkdir -p "${OUTPUT_DIR}/${filename}"
   
 # Perform the BLASTN search
  blastn -task megablast \
@@ -718,6 +718,60 @@ done
 Save and run_blastn_search.sh
 ```
 run_blastn.sh
+```
+iii) Doinf all the *.contigs.fasta & *.scaffold.fasta
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J blastn
+#SBATCH -n 4
+
+#module purge to avoid clashing
+module purge
+
+#module load
+module load blast/2.12.0+
+
+# Set the input directory
+input_dir="./results/spades"
+
+# Set the output directory
+output_dir="./results/blast"
+
+# Set the BLAST database path
+db_path="/export/data/bio/ncbi/blast/db/v5/nt"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Loop over all files in the input directory
+for file in "${input_dir}"/*.fasta; do
+    # Extract the filename without the extension
+    filename=$(basename "${file%.*}")
+    
+    # Make output directory for this sample
+    mkdir -p "${output_dir}/${filename}"
+  
+    # Perform the BLASTN search on scaffold.fasta
+    blastn -task megablast \
+           -query "${input_dir}/${filename}.scaffold.fasta" \
+           -db "${db_path}" \
+           -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
+           -culling_limit 5 \
+           -num_threads 4 \
+           -evalue 1e-25 \
+           -out "${output_dir}/${filename}.scaffold.vs.nt.cul5.1e25.megablast.out"
+
+    # Perform the BLASTN search on contigs.fasta
+    blastn -task megablast \
+           -query "${input_dir}/${filename}.contigs.fasta" \
+           -db "${db_path}" \
+           -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
+           -culling_limit 5 \
+           -num_threads 4 \
+           -evalue 1e-25 \
+           -out "${output_dir}/${filename}.contigs.vs.nt.cul5.1e25.megablast.out"
+done
 ```
 
 View the blast
