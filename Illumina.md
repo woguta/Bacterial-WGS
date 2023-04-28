@@ -885,6 +885,9 @@ iii) Run both abricate and rgi for a comprehensive amr genes analysis
 #SBATCH -J abricate_rgi
 #SBATCH -n 4
 
+#module purge to avoid clashing
+module purge
+
 # Load the required modules
 module load abricate/1.0.1
 module load rgi/6.0.2
@@ -923,7 +926,8 @@ for sample_dir in "${input_dir}"/*/; do
                  --mincov "${min_coverage}" \
                  "${sample_dir}/contigs.fasta" \
                  > "${output_dir}/${sample}/contigs_${db}.abricate.tsv"
-        
+		 
+    # Run ABRICATE on the scafffolds file    
         abricate --db "${db}" \
                  --minid "${min_identity}" \
                  --mincov "${min_coverage}" \
@@ -961,10 +965,10 @@ for sample_dir in "${input_dir}"/*/; do
         --force \
         --debug \
 
-    # Generate heatmap for AMR genes
     rgi heatmap \
-        --input "${output_dir}/${sample}/contigs.rgi.tsv" \
-        --output "${output_dir}/${sample}_heatmap.png"
+    --input "${output_dir}/${sample}/contigs.rgi.tsv" \
+    --output "${output_dir}/${sample}_heatmap.png" \
+    --dpi 300
 done
 ```
 iv) Run both abricate and rgi for a comprehensive amr analysis with summary provided
@@ -973,6 +977,9 @@ iv) Run both abricate and rgi for a comprehensive amr analysis with summary prov
 #SBATCH -p batch
 #SBATCH -J abricate_rgi
 #SBATCH -n 4
+
+#module purge to avoid clashing
+module purge
 
 # Load the required modules
 module load abricate/1.0.1
