@@ -695,8 +695,11 @@ for file in "${input_dir}"/*.fasta; do
     # Extract the filename without the extension
     filename=$(basename "${file%.*}")
     
-    # Perform the BLASTN search
-    blastn -task megablast \
+# Make output directory for this sample
+ mkdir -p "${OUTPUT_DIR}/${SAMPLE}"
+  
+# Perform the BLASTN search
+ blastn -task megablast \
         -query "${file}" \
         -db "${db_path}" \
         -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
