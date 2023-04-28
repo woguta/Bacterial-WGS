@@ -877,6 +877,97 @@ rgi tab --input ./results/rgi/AS-27566-C1-C_S23_L001_rgi.txt --output ./results/
 ```
 This creates a tab-delimited file named AS-27566-C1-C_S23_L001_rgi_summary.tsv in the ./results/rgi/ directory. The file is viewd in a text editor or spreadsheet software like Microsoft Excel or Google Sheets. The file contains information about the predicted AMR genes in the sample, including their names, types, and percent identities.
 
+Run bothabricate and rgi for a comprehensive amr genes analysis
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J abricate_rgi
+#SBATCH -n 4
+
+# Load the required modules
+module load abricate/1.0.1
+module load rgi/6.0.2
+
+# Set the input directory
+input_dir="./results/spades"
+
+# Set the output directory
+output_dir="./results/abricate_rgi"
+
+# Set the ABRICATE databases to use
+databases=("ncbi" "card" "argannot" "resfinder" "megares" "plasmidfinder" "vfdb")
+
+# Set the ABRICATE and RGI minimum identity and coverage thresholds
+min_identity="80"
+min_coverage="60"
+
+# Set the RGI database to use
+rgi_database="CARD"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Loop over all sample directories in the input directory
+for sample_dir in "${input_dir}"/*/; do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}")
+    
+    # Make output directory for this sample
+    mkdir -p "${output_dir}/${sample}"
+  
+    # Run ABRICATE on the contigs file
+    for db in "${databases[@]}"; do
+        abricate --db "${db}" \
+                 --minid "${min_identity}" \
+                 --mincov "${min_coverage}" \
+                 "${sample_dir}/contigs.fasta" \
+                 > "${output_dir}/${sample}/contigs_${db}.abricate.tsv"
+        
+        abricate --db "${db}" \
+                 --minid "${min_identity}" \
+                 --mincov "${min_coverage}" \
+                 "${sample_dir}/scaffolds.fasta" \
+                 > "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv"
+    done
+    
+    # Run RGI on the contigs file
+    rgi main \
+        -i "${sample_dir}/contigs.fasta" \
+        -o "${output_dir}/${sample}/contigs.rgi.tsv" \
+        -t contig \
+        -d "${rgi_database}" \
+        --blastn_threads 4 \
+        --prodigal_threads 4 \
+        --min_identity "${min_identity}" \
+        --min_coverage "${min_coverage}" \
+        --clean \
+        --verbose \
+        --force \
+        --debug \
+    
+    # Run RGI on the scaffolds file
+    rgi main \
+        -i "${sample_dir}/scaffolds.fasta" \
+        -o "${output_dir}/${sample}/scaffolds.rgi.tsv" \
+        -t scaffold \
+        -d "${rgi_database}" \
+        --blastn_threads 4 \
+        --prodigal_threads 4 \
+        --min_identity "${min_identity}" \
+        --min_coverage "${min_coverage}" \
+        --clean \
+        --verbose \
+        --force \
+        --debug \
+
+    # Generate heatmap for AMR genes
+    rgi heatmap \
+        --input "${output_dir}/${sample}/contigs.rgi.tsv" \
+        --output "${output_dir}/${sample}_heatmap.png"
+done
+```
+
 14. Identification of virulence factors
 
 The ability of a bacterium to colonise a host and contribute to its pathogenecity, or ability to cause disease, are known as virulence factors. In order to gather data regarding the virulence factors of bacterial pathogens, we will make use of the virulence factor database (VFDB), which is an integrated and comprehensive resource. We will scan through our contigs against the VFDB quickly to find any sequences that include known virulence factors.
