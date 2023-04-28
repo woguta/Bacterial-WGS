@@ -744,39 +744,53 @@ db_path="/export/data/bio/ncbi/blast/db/v5/nt"
 # Make the output directory if it doesn't exist
 mkdir -p "${output_dir}"
 
-# Loop over all files in the input directory
-for file in "${input_dir}"/*.fasta; do
-    # Extract the filename without the extension
-    filename=$(basename "${file%.*}")
+# Loop over all sample directories in the input directory
+for sample_dir in "${input_dir}"/*/; do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}")
     
     # Make output directory for this sample
-    mkdir -p "${output_dir}/${filename}"
+    mkdir -p "${output_dir}/${sample}"
   
-    # Perform the BLASTN search on scaffold.fasta
+    # Perform the BLASTN search against scaffold.fasta
     blastn -task megablast \
-           -query "${input_dir}/${filename}/scaffold.fasta" \
+           -query "${sample_dir}/scaffolds.fasta" \
            -db "${db_path}" \
            -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
            -culling_limit 5 \
            -num_threads 4 \
            -evalue 1e-25 \
-           -out "${output_dir}/${filename}.scaffold.vs.nt.cul5.1e25.megablast.out"
-
-    # Perform the BLASTN search on contigs.fasta
+           -out "${output_dir}/${sample}/scaffolds.vs.nt.cul5.1e25.megablast.out"
+    
+    # Perform the BLASTN search against contigs.fasta
     blastn -task megablast \
-           -query "${input_dir}/${filename}/contigs.fasta" \
+           -query "${sample_dir}/contigs.fasta" \
            -db "${db_path}" \
            -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
            -culling_limit 5 \
            -num_threads 4 \
            -evalue 1e-25 \
-           -out "${output_dir}/${filename}.contigs.vs.nt.cul5.1e25.megablast.out"
+           -out "${output_dir}/${sample}/contigs.vs.nt.cul5.1e25.megablast.out"
 done
 ```
+This assumes that the input_dir/
+├── sample1/
+│   ├── scaffolds.fasta
+│   └── contigs.fasta
+├── sample2/
+│   ├── scaffolds.fasta
+│   └── contigs.fasta
+├── sample3/
+│   ├── scaffolds.fasta
+│   └── contigs.fasta
+└── ...
 
 View the blast
 ```
 less -S ./results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out
+```
+```
+less -S ./results/blast/scaffolds.fasta.vs.nt.cul5.1e25.megablast.out
 ```
 13. AMR Identification
 
