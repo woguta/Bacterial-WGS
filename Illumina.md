@@ -910,6 +910,11 @@ rgi heatmap --input ./results/rgi \
 The first command is using the rgi main command to run RGI analysis on the assembled contigs file (./results/spades/contigs.fasta). The results will be saved in a file called AS-27566-C1-C_S23_L001_rgi in the ./results/rgi directory. The --local option indicates that the local database will be used, the -a BLAST option specifies the use of BLAST algorithm for homology searches, and the -g PRODIGAL option specifies the use of PRODIGAL for gene prediction. The --clean and --low_quality options are used for quality control, and the --split_prodigal_jobs option is used to split the gene prediction jobs into multiple threads to speed up the process.
 
 The second command is using the rgi heatmap command to generate a heatmap of the RGI results. The --input option specifies the directory where the RGI results are saved, and the --output option specifies the file name and location of the heatmap image. The heatmap will be organized alphabetically by sample and AMR gene. The resulting image will be saved as a PNG file in the ./results/rgi directory with the name AS-27566-C1-C_S23_L001_rgi_alphabetic.png.
+Summarize the results using rgi Tab
+```
+rgi tab --input ./results/rgi/AS-27566-C1-C_S23_L001_rgi.txt --output ./results/rgi/AS-27566-C1-C_S23_L001_rgi_summary.tsv
+```
+This creates a tab-delimited file named AS-27566-C1-C_S23_L001_rgi_summary.tsv in the ./results/rgi/ directory. The file is viewd in a text editor or spreadsheet software like Microsoft Excel or Google Sheets. The file contains information about the predicted AMR genes in the sample, including their names, types, and percent identities.
 
 ii) Loop for all samples
 ```
@@ -1011,13 +1016,11 @@ paste -d , "${output_dir}/combined_contigs_rgi_csv" "${output_dir}/combined_scaf
 
 done
 ```
-This script will loop over all files in the input directory with the extension .fasta, extract the sample name from the file name, perform RGI analysis on each file, and generate a heatmap for the AMR genes. The output files will be saved in the output directory with the sample name and appropriate extensions.
+This  script performs RGI (Resistance Gene Identifier) analysis on contigs and scaffolds generated from genome assembly for multiple samples. The script first purges modules and then loads the necessary module RGI, and sets up the RGI database by creating a symbolic link to the CARD (Comprehensive Antibiotic Resistance Database) localDB.
 
-Summarize the results using rgi Tab
-```
-rgi tab --input ./results/rgi/AS-27566-C1-C_S23_L001_rgi.txt --output ./results/rgi/AS-27566-C1-C_S23_L001_rgi_summary.tsv
-```
-This creates a tab-delimited file named AS-27566-C1-C_S23_L001_rgi_summary.tsv in the ./results/rgi/ directory. The file is viewd in a text editor or spreadsheet software like Microsoft Excel or Google Sheets. The file contains information about the predicted AMR genes in the sample, including their names, types, and percent identities.
+The script then defines input and output directories for the analysis and creates output directories for each sample. The RGI analysis is performed on both contigs and scaffolds, with the results output to separate files for each sample. A heatmap is also generated for each sample showing the presence of AMR (Antimicrobial Resistance) genes.
+
+After processing all the samples, the script combines the results from all contigs.rgi.csv files into a single file called combined_contigs_rgi_csv, and all scaffolds.rgi.csv files into a single file called combined_scaffolds_rgi_csv. Finally, the script merges the combined_contigs_rgi_csv and combined_scaffolds_rgi_csv files into a single file called combined_contigs_scaffolds_rgi_csv.
 
 iii) Run abricate amr genes analysis for all samples
 
