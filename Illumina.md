@@ -918,36 +918,97 @@ ii) Loop for all samples
 #SBATCH -J RGI
 #SBATCH -n 4
 
-# Load modules
+#module purge to avoid conflicts
+module purge
+
+#load required modules
 module load rgi/6.0.2
 
+#soft landing to the required RGI database
+
+cd ./database
+
+ln -s /var/scratch/gkibet/card/localDB .
+
+#cd to working directory data
+cd ./../
+
 # Define input and output directories
-INPUT_DIR=./results/spades
-OUTPUT_DIR=./results/rgi
+input_dir="./results/spades"
+output_dir="./results/abricate_rgi"
 
 # Create output directory if it does not exist
-mkdir -p "${OUTPUT_DIR}"
+mkdir -p "${output_dir}"
 
-# Iterate over all files in input directory
-for file in ${INPUT_DIR}/*.fasta
-do
-  # Extract sample name from file name
-  SAMPLE=$(basename "${file}" .fasta)
-  
-  # Perform RGI analysis
-  rgi main --input_sequence ${file} \
-  --output_file ${OUTPUT_DIR}/${SAMPLE}_rgi \
-  --local \
-  -a BLAST \
-  -g PRODIGAL \
-  --clean \
-  --low_quality \
-  --num_threads 4 \
-  --split_prodigal_jobs
+# Set the comnined file names
+combined_contigs_rgi_csv="${output_dir}/abricate_rgi/combined_contigs.rgi.csv"
+combined_scaffolds_rgi_csv="${output_dir}/abricate_rgi/combined_scaffolds.rgi.csv"
+combined_contigs_scaffolds_rgi_csv="${output_dir}/abricate_rgi/combined_contigs_scaffolds.rgi.csv"
 
-  # Generate heatmap for AMR genes
-  rgi heatmap --input ${OUTPUT_DIR}/${SAMPLE}_rgi \
-  --output ${OUTPUT_DIR}/${SAMPLE}_rgi_heatmap.png
+# Create the header for the comnined file names
+echo "sample,db,query_id,accession,coverage,identity,gene,start,end,hit_length,amr_gene_family,drug_class,mechanism,group,reference" > "${combined_contigs_rgi_csv}"
+echo "sample,db,query_id,accession,coverage,identity,gene,start,end,hit_length,amr_gene_family,drug_class,mechanism,group,reference" > "${combined_scaffolds_rgi_csv}"
+echo "sample,db,query_id,accession,coverage,identity,gene,start,end,hit_length,amr_gene_family,drug_class,mechanism,group,reference" > "${combined_contigs_scaffolds_rgi_csv}"
+
+# Loop over all sample directories in the input directory
+for sample_dir in "${input_dir}"/*/; do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}")
+
+    # Make output directory for this sample if doesn't exit
+    mkdir -p "${output_dir}/${sample}"
+
+    # Perform RGI analysis on contigs
+    rgi main \
+        -i "${sample_dir}/contigs.fasta" \
+        -o "${output_dir}/${sample}/contigs.rgi.tsv" \
+        -t contig \
+        -- ./database/localDB \
+        -a BLAST \
+        -g PRODIGAL \
+        --clean \
+        --low_quality \
+        --num_threads 4 \
+        --split_prodigal_jobs \
+        | csvformat -T \
+        >> "${output_dir}/${sample}/contigs.rgi.csv"
+
+    # Generate heatmap for AMR genes for contigs
+    rgi heatmap \
+        --input "${output_dir}/${sample}/contigs.rgi.tsv" \
+        --output "${output_dir}/${sample}_heatmap.png" \
+        --dpi 300
+
+    # Perform RGI analysis on scaffolds
+    rgi main \
+        -i "${sample_dir}/scaffolds.fasta" \
+        -o "${output_dir}/${sample}/scaffolds.rgi.tsv" \
+        -t scaffold \
+        -- ./database/localDB \
+        -a BLAST \
+        -g PRODIGAL \
+        --clean \
+        --low_quality \
+        --num_threads 4 \
+        --split_prodigal_jobs \
+        | csvformat -T \
+        >> "${output_dir}/${sample}/scaffolds.rgi.csv"
+
+    # Generate heatmap for AMR genes from scaffolds
+    rgi heatmap \
+        --input "${output_dir}/${sample}/scaffolds.rgi.tsv" \
+        --output "${output_dir}/${sample}_heatmap.png" \
+        --dpi 300
+
+# Combine all contigs.rgi.csv files into a single file
+cat "${output_dir}"/*/contigs.rgi.csv > "${output_dir}/combined_contigs_rgi_csv"
+
+# Combine all scaffolds.rgi.csv files into a single file
+cat "${output_dir}"/*/scaffolds.rgi.csv > "${output_dir}/combined_scaffolds_rgi_csv"
+
+# Merge combined_contigs_rgi.csv and combined_scaffolds_rgi.csv into a single file
+paste -d , "${output_dir}/combined_contigs_rgi_csv" "${output_dir}/combined_scaffolds_rgi_csv" > "${output_dir}/combined_contigs_scaffolds_rgi_csv"
+
 done
 ```
 This script will loop over all files in the input directory with the extension .fasta, extract the sample name from the file name, perform RGI analysis on each file, and generate a heatmap for the AMR genes. The output files will be saved in the output directory with the sample name and appropriate extensions.
@@ -958,7 +1019,7 @@ rgi tab --input ./results/rgi/AS-27566-C1-C_S23_L001_rgi.txt --output ./results/
 ```
 This creates a tab-delimited file named AS-27566-C1-C_S23_L001_rgi_summary.tsv in the ./results/rgi/ directory. The file is viewd in a text editor or spreadsheet software like Microsoft Excel or Google Sheets. The file contains information about the predicted AMR genes in the sample, including their names, types, and percent identities.
 
-iii) Run both abricate and rgi for a comprehensive amr genes analysis
+iii) Run abricate amr genes analysis for all samples
 
 ```
 #!/usr/bin/bash -l
@@ -971,7 +1032,6 @@ module purge
 
 # Load the required modules
 module load abricate/1.0.1
-module load rgi/6.0.2
 
 # Set the input directory
 input_dir="./results/spades"
@@ -985,111 +1045,15 @@ databases=("ncbi" "card" "argannot" "resfinder" "megares" "plasmidfinder" "vfdb"
 # Set the ABRICATE and RGI minimum identity and coverage thresholds
 min_identity="80"
 min_coverage="60"
-
-# Set the RGI database to use
-rgi_database="CARD"
 
 # Make the output directory if it doesn't exist
 mkdir -p "${output_dir}"
-
-# Loop over all sample directories in the input directory
-for sample_dir in "${input_dir}"/*/; do
-    # Extract the sample name from the directory path
-    sample=$(basename "${sample_dir}")
-    
-    # Make output directory for this sample
-    mkdir -p "${output_dir}/${sample}"
-  
-    # Run ABRICATE on the contigs file
-    for db in "${databases[@]}"; do
-        abricate --db "${db}" \
-                 --minid "${min_identity}" \
-                 --mincov "${min_coverage}" \
-                 "${sample_dir}/contigs.fasta" \
-                 > "${output_dir}/${sample}/contigs_${db}.abricate.tsv"
-		 
-    # Run ABRICATE on the scafffolds file    
-        abricate --db "${db}" \
-                 --minid "${min_identity}" \
-                 --mincov "${min_coverage}" \
-                 "${sample_dir}/scaffolds.fasta" \
-                 > "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv"
-    done
-    
-    # Run RGI on the contigs file
-    rgi main \
-        -i "${sample_dir}/contigs.fasta" \
-        -o "${output_dir}/${sample}/contigs.rgi.tsv" \
-        -t contig \
-        -d "${rgi_database}" \
-        --blastn_threads 4 \
-        --prodigal_threads 4 \
-        --min_identity "${min_identity}" \
-        --min_coverage "${min_coverage}" \
-        --clean \
-        --verbose \
-        --force \
-        --debug \
-    
-    # Run RGI on the scaffolds file
-    rgi main \
-        -i "${sample_dir}/scaffolds.fasta" \
-        -o "${output_dir}/${sample}/scaffolds.rgi.tsv" \
-        -t scaffold \
-        -d "${rgi_database}" \
-        --blastn_threads 4 \
-        --prodigal_threads 4 \
-        --min_identity "${min_identity}" \
-        --min_coverage "${min_coverage}" \
-        --clean \
-        --verbose \
-        --force \
-        --debug \
-
-    rgi heatmap \
-    --input "${output_dir}/${sample}/contigs.rgi.tsv" \
-    --output "${output_dir}/${sample}_heatmap.png" \
-    --dpi 300
-done
-```
-iv) Run both abricate and rgi for a comprehensive amr analysis with summary provided
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J abricate_rgi
-#SBATCH -n 4
-
-#module purge to avoid clashing
-module purge
-
-# Load the required modules
-module load abricate/1.0.1
-module load rgi/6.0.2
-
-# Set the input directory
-input_dir="./results/spades"
-
-# Set the output directory
-output_dir="./results/abricate_rgi"
-
-# Set the ABRICATE databases to use
-databases=("ncbi" "card" "argannot" "resfinder" "megares" "plasmidfinder" "vfdb")
-
-# Set the ABRICATE and RGI minimum identity and coverage thresholds
-min_identity="80"
-min_coverage="60"
-
-# Set the RGI database to use
-rgi_database="CARD"
 
 # Set the summary file name
 summary_file="${output_dir}/abricate_rgi_summary.csv"
 
 # Create the header for the summary file
 echo "sample,db,query_id,accession,coverage,identity,gene,start,end,hit_length,amr_gene_family,drug_class,mechanism,group,reference" > "${summary_file}"
-
-# Make the output directory if it doesn't exist
-mkdir -p "${output_dir}"
 
 # Loop over all sample directories in the input directory
 for sample_dir in "${input_dir}"/*/; do
@@ -1117,47 +1081,6 @@ for sample_dir in "${input_dir}"/*/; do
                  > "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv"
         csvformat -T "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv" \
                  >> "${output_dir}/${sample}/contigs_${db}.abricate.csv"
-    done
-    
-    # Run RGI on the contigs files
-    rgi main \
-        -i "${sample_dir}/contigs.fasta" \
-        -o "${output_dir}/${sample}/contigs.rgi.tsv" \
-        -t contig \
-        -d "${rgi_database}" \
-        --blastn_threads 4 \
-        --prodigal_threads 4 \
-        --min_identity "${min_identity}" \
-        --min_coverage "${min_coverage}" \
-        --clean \
-        --verbose \
-        --force \
-        --debug \
-        | csvformat -T \
-        >> "${output_dir}/${sample}/contigs.rgi.csv"
-    
-    # Run RGI on the scaffolds files
-    rgi main \
-        -i "${sample_dir}/scaffolds.fasta" \
-        -o "${output_dir}/${sample}/scaffolds.rgi.tsv" \
-        -t scaffold \
-        -d "${rgi_database}" \
-        --blastn_threads 4 \
-        --prodigal_threads 4 \
-        --min_identity "${min_identity}" \
-        --min_coverage "${min_coverage}" \
-        --clean \
-        --verbose \
-        --force \
-        --debug \
-        | csvformat -T \
-        >> "${output_dir}/${sample}/scaffolds.rgi.csv"
-
-    # Generate heatmap for AMR genes
-    rgi heatmap \
-        --input "${output_dir}/${sample}/contigs.rgi.tsv" \
-        --output "${output_dir}/${sample}_heatmap.png" \
-        --dpi 300
 done
 ```
 14. Identification of virulence factors
