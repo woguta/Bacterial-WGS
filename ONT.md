@@ -265,3 +265,14 @@ do
          --debug
 done
 ```
+flye: This is the command to run Flye, the assembler for long-read sequencing data.
+--nano-raw "${input_fastq}": This option specifies the input FASTQ file to be assembled by Flye. The variable ${input_fastq} contains the path to the FASTQ file for the current barcode being processed.
+--out-dir "${output_dir}/${barcode}": This option specifies the output directory for Flye to write the assembly results to. The variable ${output_dir} contains the top-level directory where all the barcode-specific output directories will be created, and ${barcode} is the current barcode being processed.
+--genome-size "3m-8m": This option specifies the expected size range of the genome being assembled. In this case, the expected size is between 3 and 8 million base pairs.
+--threads 4: This option specifies the number of CPU threads to use during the assembly process. In this case, Flye will use 4 threads to perform the assembly.
+--plasmids: This option enables Flye to identify and assemble plasmid sequences in the input data.
+--scaffold: This option enables Flye to scaffold the contigs into larger sequences using paired-end reads.
+--polish-target all: This option enables Flye to polish the assembled genome using all available data.
+--iteration 3: This option specifies the iteration number for polishing the genome. In this case, Flye will perform polishing during the third iteration of the assembly process.
+--iterations 4: This option specifies the maximum number of assembly iterations Flye will perform. In this case, Flye will perform up to 4 iterations to refine the assembly.
+--debug: This option enables Flye to output debugging information to the console.
