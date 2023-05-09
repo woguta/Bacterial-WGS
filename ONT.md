@@ -78,8 +78,8 @@ fastqc \
         -t 4 \
         --extract \
         -o ./results/fastqc \
-        -f fastq ./raw_data/merged_fastq_pass/barcode02.all.fastq \
-                 ./raw_data/merged_fastq_pass/barcode48.all.fastq
+        -f fastq ./raw_data/Fastq/barcode02.all.fastq \
+                 ./raw_data/Fastq/barcode48.all.fastq
 ```
 
 ii.    Create the loop for all samples
@@ -90,7 +90,7 @@ ii.    Create the loop for all samples
 #SBATCH -n 4
 
 # Set the input and output directories
-INPUT_DIR=./raw_data/merged_fastq_pass/
+INPUT_DIR=./raw_data/Fastq/
 OUTPUT_DIR=./results/fastqc/
 
 # Make directory to store the results
@@ -172,8 +172,8 @@ export PATH="$PATH:~/nanoplot"
 nanoplot \
     -t 4 \
     --fastq \
-    ./raw_data/merged_fastq_pass/barcode02.all.fastq \
-    ./raw_data/merged_fastq_pass/barcode48.all.fastq \
+    ./raw_data/Fastq/barcode02.all.fastq \
+    ./raw_data/Fastq/barcode48.all.fastq \
     -o ./results/nanoplot/ \
     --plots dot
 ```
@@ -185,7 +185,7 @@ ii) Loop for all samples
 #SBATCH -n 4
 
 # Set the input and output directories
-INPUT_DIR=./raw_data/merged_fastq_pass/
+INPUT_DIR=./raw_data/Fastq/
 OUTPUT_DIR=./results/nanoplot/
 
 # Make directory to store the results
@@ -205,6 +205,7 @@ for file in $INPUT_DIR/*.fastq; do
     mv $OUTPUT_DIR/$filename* $OUTPUT_DIR/plots/
 done
 ```
+ONT fastq files based called by guppyplex has been trimmed
 NB Renaming barcode*all.fastq to barcode.fastq
 ```
 i=1
@@ -215,3 +216,52 @@ for barcode in *.all.fastq; do
 done
 ```
 This script will rename all files in the current directory that end with .all.fastq to the format barcode_x.fastq, where x is a sequential number starting from 1.
+
+Denovo genome assembly for all the samples, here we're using flye
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J flye
+#SBATCH -n 4
+
+#module purge to avoid conflicts
+module purge
+
+#load required modules
+module load flye/2.9
+
+# Define input and output directories
+input_dir="./raw_data/Fastq"
+output_dir="./results/flye"
+
+# Create output directory if it does not exist
+mkdir -p "${output_dir}"
+
+# Loop over all barcode directories in the input directory
+for barcode_file in "${input_dir}"/barcode_*.fastq;
+do
+    # Extract the barcode name from the directory path
+    barcode=$(basename "${barcode_file}" .fastq)
+
+    # Set read permission for the input file
+    chmod +r "${barcode_file}"
+
+    # Define input FASTQ file path for this barcode
+    input_fastq="${barcode_file}"
+
+    # Make output directory for this barcode if it does not exist
+    mkdir -p "${output_dir}/${barcode}"
+
+    # Run Flye with recommended parameters for bacterial denovo genome assembly
+    flye --nano-raw "${input_fastq}" \
+         --out-dir "${output_dir}/${barcode}" \
+         --genome-size "3m-8m" \
+         --threads 4 \
+         --plasmids \
+         --scaffold \
+         --polish-target all \
+         --iteration 3 \
+         --iterations 4 \
+         --debug
+done
+```
