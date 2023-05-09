@@ -205,3 +205,13 @@ for file in $INPUT_DIR/*.fastq; do
     mv $OUTPUT_DIR/$filename* $OUTPUT_DIR/plots/
 done
 ```
+NB Renaming barcode*all.fastq to barcode.fastq
+```
+i=1
+for barcode in *.all.fastq; do
+    newname="barcode_${i}.fastq"
+    mv "$barcode" "$newname"
+    i=$((i+1))
+done
+```
+This script will rename all files in the current directory that end with .all.fastq to the format barcode_x.fastq, where x is a sequential number starting from 1.
