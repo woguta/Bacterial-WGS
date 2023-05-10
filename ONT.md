@@ -150,26 +150,12 @@ check the nanoplot
 ```
 conda list nanoplot
 ```
-8. Trimmimg
-Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
-
-Porechop: Porechop is a tool designed to trim adapters from ONT reads. It can also perform size selection and quality filtering.
-
-NanoFilt: NanoFilt is a tool for filtering and trimming ONT reads based on quality scores, read length, and other parameters.
-
-Filtlong: Filtlong is a tool for filtering and trimming long reads, including ONT reads, based on quality scores, length, and identity to a reference.
-
-LongQC: LongQC is a tool that provides quality control metrics for long-read sequencing data, including ONT reads. It can also perform filtering and trimming based on read length and quality scores.
-
-PycoQC: PycoQC is a tool that provides quality control metrics for ONT sequencing data. It can also trim reads based on quality scores.
-
-Nanopack: Nanopack is a collection of tools for analyzing ONT sequencing data, including tools for quality control, filtering, and trimming.
-
+Run NnoPlot
 i) Run two samples
 ```
-# Add nanoplot path to PATH variable
+# Add NanoPlot path to PATH variable
 export PATH="$PATH:~/nanoplot"
-nanoplot \
+NanoPlot \
     -t 4 \
     --fastq \
     ./raw_data/Fastq/barcode02.all.fastq \
@@ -199,13 +185,63 @@ for file in $INPUT_DIR/*.fastq; do
     # Get filename without extension
     filename=$(basename "$file" .fastq)
     # Run nanoplot with 4 threads and output to results directory
-    nanoplot --threads 4 --outdir $OUTPUT_DIR $file
+    NanoPlot --threads 4 --outdir $OUTPUT_DIR $file
     # Move generated plots to a subdirectory
     mkdir -p $OUTPUT_DIR/plots
     mv $OUTPUT_DIR/$filename* $OUTPUT_DIR/plots/
 done
 ```
+8. Adapters and Barcodes Trimmimg
+
 ONT fastq files based called by guppyplex has been trimmed
+
+Trimming is done to improve its quality. Some popular tools for trimming ONT data are:
+
+Porechop: Porechop is a tool designed to trim adapters from ONT reads. It can also perform size selection and quality filtering.
+
+NanoFilt: NanoFilt is a tool for filtering and trimming ONT reads based on quality scores, read length, and other parameters.
+
+Filtlong: Filtlong is a tool for filtering and trimming long reads, including ONT reads, based on quality scores, length, and identity to a reference.
+
+LongQC: LongQC is a tool that provides quality control metrics for long-read sequencing data, including ONT reads. It can also perform filtering and trimming based on read length and quality scores.
+
+PycoQC: PycoQC is a tool that provides quality control metrics for ONT sequencing data. It can also trim reads based on quality scores.
+
+Nanopack: Nanopack is a collection of tools for analyzing ONT sequencing data, including tools for quality control, filtering, and trimming.
+
+Run porechop for all samples
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J porechop
+#SBATCH -n 8
+
+#load necessary modules
+module purge
+module load porechop/0.3.2pre
+
+# Define input and output directories
+input_dir="./raw_data/merged_fastq_pass"
+output_dir="./results/porechop"
+
+# Create output directory if it does not exist
+mkdir -p "${output_dir}"
+
+# Loop over all fastq.gz files in the input directory
+for fastq_gz_file in "${input_dir}"/*.all.fastq.gz;
+do
+    # Extract the filename without the extension
+    filename=$(basename "${fastq_gz_file}")
+    filename="${filename%.*}"
+
+    # Make output directory for this file if it does not exist
+    mkdir -p "${output_dir}/${filename}"
+
+    # Run Porechop to trim adapters and barcodes
+    porechop -i "${fastq_gz_file}" \
+             -o "${output_dir}/${filename}/${filename}.trimmed.fastq.gz"
+done
+```
 NB Renaming barcode*all.fastq to barcode.fastq
 ```
 i=1
@@ -217,7 +253,7 @@ done
 ```
 This script will rename all files in the current directory that end with .all.fastq to the format barcode_x.fastq, where x is a sequential number starting from 1.
 
-Denovo genome assembly for all the samples, here we're using flye
+9. Denovo genome assembly for all the samples, here we're using flye
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
