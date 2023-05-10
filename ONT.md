@@ -251,6 +251,12 @@ for barcode in *.all.fastq; do
     i=$((i+1))
 done
 ```
+or
+```
+for file in barcode*.all.fastq.trimmed.fastq.gz; do
+  mv "$file" "${file%%.all.fastq.trimmed.fastq.gz}.fastq.gz"
+done
+```
 This script will rename all files in the current directory that end with .all.fastq to the format barcode_x.fastq, where x is a sequential number starting from 1.
 
 9. Denovo genome assembly for all the samples, here we're using flye
