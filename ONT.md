@@ -40,7 +40,7 @@ The -p option allows the mkdir command to create the parent directories if they 
 
 3.  .  Data retrieval
 
-Use scp username@remote:/path/to/data /path/to/local/directory
+i) Use scp username@remote:/path/to/data /path/to/local/directory
 
 ```
 scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
@@ -48,6 +48,9 @@ scp -r woguta@hpc.ilri.cgiar.org:/path/to/data  .
 
 The -r option is used to copy the directory recursively. The . at the end of the command specifies the current directory as the destination. space fullstop " ." specifies your current folder.
 
+ii) Base calling using gyppyplex5+
+```
+```
 4. Load modules
 ```
 module load fastqc/0.11.9
