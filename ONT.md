@@ -280,12 +280,9 @@ do
     filename=$(basename "${fastq_gz_file}")
     filename="${filename%.*}"
 
-    # Make output directory for this file if it does not exist
-    mkdir -p "${output_dir}/${filename}"
-
-    # Run Porechop to trim adapters and barcodes
+# Run Porechop to trim adapters and barcodes
     porechop -i "${fastq_gz_file}" \
-             -o "${output_dir}/${filename}/${filename}.trimmed.fastq.gz"
+             -o "${output_dir}/${filename}.trimmed.fastq.gz"
 done
 ```
 NB Renaming barcode*all.fastq to barcode.fastq
@@ -300,7 +297,7 @@ done
 or
 ```
 for file in barcode*.all.fastq.trimmed.fastq.gz; do
-  mv "$file" "${file%%.all.fastq.trimmed.fastq.gz}.fastq.gz"
+  mv "$file" "${file%%.all.fastq.trimmed.fastq.gz}.trimmed.fastq.gz"
 done
 ```
 This script will rename all files in the current directory that end with .all.fastq to the format barcode_x.fastq, where x is a sequential number starting from 1.
@@ -416,9 +413,6 @@ for sample_dir in "${input_dir}"/*/; do
 
 # Define input fasta path for this sample
     input_fasta="${sample_dir}"/assembly.fasta
-
-# Make output directory for this sample
- mkdir -p "${output_dir}/${sample}"
 
 # Perform the BLASTN search
  blastn -task megablast \
