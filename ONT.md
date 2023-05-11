@@ -485,7 +485,7 @@ do
 
     #Generate heatmap for AMR genes for contigs
     rgi heatmap \
-        --input "${output_dir}/${sample}/.contigs.rgi.json" \
+        --input "${output_dir}/${sample}/.contigs.rgi.tsv" \
         --output "${output_dir}/${sample}_heatmap.png" \
         --debug
 done
