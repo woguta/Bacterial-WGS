@@ -304,8 +304,9 @@ for file in barcode*.all.fastq.trimmed.fastq.gz; do
 done
 ```
 This script will rename all files in the current directory that end with .all.fastq to the format barcode_x.fastq, where x is a sequential number starting from 1.
+9. Run Nanoplot again on the trimmed.fastq.gz files
 
-9. Denovo genome assembly for all the samples, here we're using flye
+10. Denovo genome assembly for all the samples, here we're using flye
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -383,3 +384,50 @@ flye: This is the command to run Flye, the assembler for long-read sequencing da
 --iterations 4: This option specifies the maximum number of assembly iterations Flye will perform. In this case, Flye will perform up to 4 iterations to refine the assembly.
 
 --debug: This option enables Flye to output debugging information to the console giving warning and troubleshooting issues with the assembly or fine-tuning the assembly parameters.
+
+11. Species Identification using blast
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J blastn
+#SBATCH -n 8
+
+#module load necessary modules
+module purge
+module load blast/2.12.0+
+
+# Set the input directory
+input_dir="./results/flye"
+
+# Set the output directory
+output_dir="./results/blast"
+
+# Set the BLAST database path
+db_path="/export/data/bio/ncbi/blast/db/v5/nt"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Loop over all files in the input directory
+for file in "${input_dir}"/*/assembly.fasta; do
+    # Extract the filename without the extension
+    filename=$(basename "${file%.*}")
+
+# Define input fastq file path for this sample
+    input_fasta="${file}"
+
+# Make output directory for this sample
+ mkdir -p "${output_dir}/${filename}"
+
+# Perform the BLASTN search
+ blastn -task megablast \
+        -query "${input_fasta}" \
+        -db "${db_path}" \
+        -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
+        -culling_limit 5 \
+        -num_threads 4 \
+        -evalue 1e-25 \
+        -out "${output_dir}/${filename}.vs.nt.cul5.1e25.megablast.out"
+done
+```
