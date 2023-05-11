@@ -421,7 +421,7 @@ for sample_dir in "${input_dir}"/*/; do
         -culling_limit 5 \
         -num_threads 8 \
         -evalue 1e-25 \
-        -out "${output_dir}/${sample}.vs.nt.cul5.1e25.megablast.out"
+        -out "${output_dir}/${sample}contigs.vs.nt.cul5.1e25.megablast.out"
 done
 ```
 NB Cancelling a slurm job using scancel <job_ID>
