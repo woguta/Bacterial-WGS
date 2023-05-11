@@ -431,3 +431,8 @@ for file in "${input_dir}"/*/assembly.fasta; do
         -out "${output_dir}/${filename}.vs.nt.cul5.1e25.megablast.out"
 done
 ```
+NB Cancelling a slurm job using scancel <job_ID>
+
+```
+scancel 3114
+```
