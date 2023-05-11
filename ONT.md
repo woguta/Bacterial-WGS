@@ -429,3 +429,67 @@ NB Cancelling a slurm job using scancel <job_ID>
 ```
 scancel 3114
 ```
+12. AMR Identification
+i) Using RGI
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J rgi
+#SBATCH -n 8
+
+set -uE
+trap 'echo "Error $? occurred on line $LINENO" && exit 1' ERR
+
+#load necessary modules
+module purge
+module load rgi/6.0.2
+
+#Set the input directory
+input_dir="./results/flye"
+
+#Set the output directory
+output_dir="./results/rgi"
+
+#Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+#Loop over all samples in the input directory
+for sample_dir in "${input_dir}"/*/;
+do
+    #Extract the sample name from the directory path without extension
+    sample=$(basename "${sample_dir}")
+
+    #Make output directory for this sample if it doesn't exist
+    mkdir -p "${output_dir}/${sample}"
+
+    #Define input fasta path for this sample
+    input_fasta="${sample_dir}/assembly.fasta"
+
+    #Perform rgi analysis using contigs in assembly.fasta
+    rgi main \
+        -i "${input_fasta}" \
+        -o "${output_dir}/${sample}" \
+        -t contigs \
+        --local \
+        -a kma \
+        -g PRODIGAL \
+        --low_quality \
+        --include_wildcard \
+        --include_baits \
+        --include_other_models \
+        --num_threads 8 \
+        --split_prodigal_jobs \
+        --clean \
+        --debug \
+        2>&1 | tee "${output_dir}/${sample}.rgi.log"
+
+    #Generate heatmap for AMR genes for contigs
+    rgi heatmap \
+        --input "${output_dir}/${sample}/.contigs.rgi.json" \
+        --output "${output_dir}/${sample}_heatmap.png" \
+        --debug
+done
+```
+ii) Using Abricate
+```
+```
