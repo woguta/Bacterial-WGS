@@ -66,32 +66,31 @@ output_dir="./raw_data/fastq"
 mkdir -p "${output_dir}"
 
 # Loop over all sample directories in the input directory
-for sample_dir in "${input_dir}"/*/;
-do
-# Extract the sample name from the directory path
-  sample=$(basename "${sample_dir}")
+for sample_dir in "${input_dir}"/*/; do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}")
 
-# Define input fast5 file path for this sample
- input_fast5="${sample_dir}"/fast5
+    # Define input fast5 file path for this sample
+    input_fast5="${sample_dir}"
 
-# Run guppy_basecaller
-guppy_basecaller \
-  --device "cuda:0" \
-  --compress_fastq \
-  --input_path "${input_fast5}" \
-  --save_path "${output_dir}/${sample}" \
-  --config dna_r9.4.1_450bps_hac.cfg \
-  --num_callers 8 \
-  --cpu_threads_per_caller 8 \
-  --gpu_runners_per_device 8 \
-  --chunk_size 1000 \
-  --records_per_fastq 1000 \
-  --recursive \
-  --disable_pings \
-  --num_read_chunks 8 \
-  --qscore_filtering \
-  --min_qscore 7 \
-  --trim_barcodes
+    # Run guppy_basecaller
+    guppy_basecaller \
+        --device "cuda:0" \
+        --compress_fastq \
+        --input_path "${input_fast5}" \
+        --save_path "${output_dir}/${sample}" \
+        --config dna_r9.4.1_450bps_hac.cfg \
+        --num_callers 8 \
+        --cpu_threads_per_caller 8 \
+        --gpu_runners_per_device 8 \
+        --chunk_size 1000 \
+        --records_per_fastq 1000 \
+        --recursive \
+        --disable_pings \
+        --num_read_chunks 8 \
+        --qscore_filtering \
+        --min_qscore 7 \
+        --trim_barcodes
 done
 ```
 4. Load modules
