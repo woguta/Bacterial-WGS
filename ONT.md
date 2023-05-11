@@ -409,16 +409,16 @@ db_path="/export/data/bio/ncbi/blast/db/v5/nt"
 # Make the output directory if it doesn't exist
 mkdir -p "${output_dir}"
 
-# Loop over all files in the input directory
-for file in "${input_dir}"/*/assembly.fasta; do
-    # Extract the filename without the extension
-    filename=$(basename "${file%.*}")
+# Loop over all samples in the input directory
+for sample_dir in "${input_dir}"/*/; do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}")
 
-# Define input fastq file path for this sample
-    input_fasta="${file}"
+# Define input fasta path for this sample
+    input_fasta="${sample_dir}"/assembly.fasta
 
 # Make output directory for this sample
- mkdir -p "${output_dir}/${filename}"
+ mkdir -p "${output_dir}/${sample}"
 
 # Perform the BLASTN search
  blastn -task megablast \
@@ -426,9 +426,9 @@ for file in "${input_dir}"/*/assembly.fasta; do
         -db "${db_path}" \
         -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
         -culling_limit 5 \
-        -num_threads 4 \
+        -num_threads 8 \
         -evalue 1e-25 \
-        -out "${output_dir}/${filename}.vs.nt.cul5.1e25.megablast.out"
+        -out "${output_dir}/${sample}.vs.nt.cul5.1e25.megablast.out"
 done
 ```
 NB Cancelling a slurm job using scancel <job_ID>
