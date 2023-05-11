@@ -66,13 +66,13 @@ output_dir="./raw_data/fastq"
 mkdir -p "${output_dir}"
 
 # Loop over all sample directories in the input directory
-for sample_dir in "${input_dir}"/*.fast5;
+for sample_dir in "${input_dir}"/*/;
 do
 # Extract the sample name from the directory path
-  sample=$(basename "${sample_dir}" .fast5)
+  sample=$(basename "${sample_dir}")
 
 # Define input fast5 file path for this sample
- input_fast5="${sample_dir}"
+ input_fast5="${sample_dir}"/fast5
 
 # Run guppy_basecaller
 guppy_basecaller \
