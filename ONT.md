@@ -490,6 +490,95 @@ do
         --debug
 done
 ```
+or
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J rgi
+#SBATCH -n 8
+
+#load necessary modules
+module purge
+module load rgi/6.0.2
+
+#Set the input directory
+input_dir="./results/flye"
+
+#Set the output directory
+output_dir="./results/rgi2"
+
+#Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Loop over all sample directories in the input directory
+for sample_dir in "${input_dir}"/*/;
+do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}")
+
+    # Make output directory for this sample if it doesn't exist
+    mkdir -p "${output_dir}/${sample}"
+
+    #Perform rgi analysis for contigs
+    rgi main \
+        -i "${sample_dir}/assembly.fasta" \
+        -o "${output_dir}/${sample}/assembly.rgi.tsv" \
+        -t contig \
+        --local \
+        -a BLAST \
+        -g PRODIGAL \
+        --low_quality \
+        --num_threads 4 \
+        --split_prodigal_jobs \
+        --clean \
+        --debug
+done
+```
 ii) Using Abricate
 ```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J abricate
+#SBATCH -n 8
+
+# Load the required modules
+module purge
+module load abricate/1.0.1
+
+# Set the input directory
+input_dir="./results/flye"
+
+# Set the output directory
+output_dir="./results/abricate"
+
+# Set the ABRICATE databases to use
+databases=("ncbi" "card" "argannot" "resfinder" "megares" "plasmidfinder" "ecoli_vf" "ecoh" "vfdb")
+
+# Set the ABRICATE and RGI minimum identity and coverage thresholds
+min_identity="80"
+min_coverage="60"
+
+# Set the RGI database to use
+rgi_database="CARD"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Loop over all sample directories in the input directory
+for sample_dir in "${input_dir}"/*/; do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}")
+
+    # Make output directory for this sample
+    mkdir -p "${output_dir}/${sample}"
+
+    # Run ABRICATE on the contigs file
+    for db in "${databases[@]}"; do
+        abricate --db "${db}" \
+                 --minid "${min_identity}" \
+                 --mincov "${min_coverage}" \
+                 "${sample_dir}/assembly.fasta" \
+                 > "${output_dir}/${sample}/contigs_${db}.abricate.tsv"
+    done
+done
 ```
