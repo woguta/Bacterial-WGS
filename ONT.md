@@ -437,17 +437,15 @@ i) Using RGI
 #SBATCH -J rgi
 #SBATCH -n 8
 
-set -uE
-trap 'echo "Error $? occurred on line $LINENO" && exit 1' ERR
+# Stop the script if any command fails
+set -e
 
 #load necessary modules
 module purge
 module load rgi/6.0.2
 
-#Set the input directory
+#Set the input and output directories
 input_dir="./results/flye"
-
-#Set the output directory
 output_dir="./results/rgi"
 
 #Make the output directory if it doesn't exist
@@ -456,7 +454,7 @@ mkdir -p "${output_dir}"
 #Loop over all samples in the input directory
 for sample_dir in "${input_dir}"/*/;
 do
-    #Extract the sample name from the directory path without extension
+    # Extract the sample name from the directory path without extension
     sample=$(basename "${sample_dir}")
 
     #Make output directory for this sample if it doesn't exist
@@ -468,29 +466,21 @@ do
     #Perform rgi analysis using contigs in assembly.fasta
     rgi main \
         -i "${input_fasta}" \
-        -o "${output_dir}/${sample}" \
-        -t contigs \
+        -o "${output_dir}/${sample}/${sample}" \
+        -t contig \
         --local \
-        -a kma \
+        -a BLAST \
         -g PRODIGAL \
         --low_quality \
-        --include_wildcard \
-        --include_baits \
-        --include_other_models \
         --num_threads 8 \
         --split_prodigal_jobs \
         --clean \
         --debug \
-        2>&1 | tee "${output_dir}/${sample}.rgi.log"
-
-    #Generate heatmap for AMR genes for contigs
-    rgi heatmap \
-        --input "${output_dir}/${sample}/.contigs.rgi.tsv" \
-        --output "${output_dir}/${sample}_heatmap.png" \
-        --debug
+        2>&1 | tee "${output_dir}/${sample}/${sample}.rgi.log"
 done
 ```
-or
+OR
+
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
