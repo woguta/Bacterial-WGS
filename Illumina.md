@@ -929,31 +929,15 @@ module purge
 #load required modules
 module load rgi/6.0.2
 
-#soft landing to the required RGI database
-
-cd ./database
-
+#soft landing to the required RGI database within the pwd
 ln -s /var/scratch/gkibet/card/localDB .
-
-#cd to working directory data
-cd ./../
 
 # Define input and output directories
 input_dir="./results/spades"
-output_dir="./results/abricate_rgi"
+output_dir="./results/rgi"
 
 # Create output directory if it does not exist
 mkdir -p "${output_dir}"
-
-# Set the comnined file names
-combined_contigs_rgi_csv="${output_dir}/abricate_rgi/combined_contigs.rgi.csv"
-combined_scaffolds_rgi_csv="${output_dir}/abricate_rgi/combined_scaffolds.rgi.csv"
-combined_contigs_scaffolds_rgi_csv="${output_dir}/abricate_rgi/combined_contigs_scaffolds.rgi.csv"
-
-# Create the header for the comnined file names
-echo "sample,db,query_id,accession,coverage,identity,gene,start,end,hit_length,amr_gene_family,drug_class,mechanism,group,reference" > "${combined_contigs_rgi_csv}"
-echo "sample,db,query_id,accession,coverage,identity,gene,start,end,hit_length,amr_gene_family,drug_class,mechanism,group,reference" > "${combined_scaffolds_rgi_csv}"
-echo "sample,db,query_id,accession,coverage,identity,gene,start,end,hit_length,amr_gene_family,drug_class,mechanism,group,reference" > "${combined_contigs_scaffolds_rgi_csv}"
 
 # Loop over all sample directories in the input directory
 for sample_dir in "${input_dir}"/*/; do
@@ -971,49 +955,17 @@ for sample_dir in "${input_dir}"/*/; do
         -- ./database/localDB \
         -a BLAST \
         -g PRODIGAL \
-        --clean \
         --low_quality \
         --num_threads 4 \
         --split_prodigal_jobs \
-        | csvformat -T \
-        >> "${output_dir}/${sample}/contigs.rgi.csv"
+	--clean \
+	--debug        
 
     # Generate heatmap for AMR genes for contigs
     rgi heatmap \
         --input "${output_dir}/${sample}/contigs.rgi.tsv" \
         --output "${output_dir}/${sample}_heatmap.png" \
-        --dpi 300
-
-    # Perform RGI analysis on scaffolds
-    rgi main \
-        -i "${sample_dir}/scaffolds.fasta" \
-        -o "${output_dir}/${sample}/scaffolds.rgi.tsv" \
-        -t scaffold \
-        -- ./database/localDB \
-        -a BLAST \
-        -g PRODIGAL \
-        --clean \
-        --low_quality \
-        --num_threads 4 \
-        --split_prodigal_jobs \
-        | csvformat -T \
-        >> "${output_dir}/${sample}/scaffolds.rgi.csv"
-
-    # Generate heatmap for AMR genes from scaffolds
-    rgi heatmap \
-        --input "${output_dir}/${sample}/scaffolds.rgi.tsv" \
-        --output "${output_dir}/${sample}_heatmap.png" \
-        --dpi 300
-
-# Combine all contigs.rgi.csv files into a single file
-cat "${output_dir}"/*/contigs.rgi.csv > "${output_dir}/combined_contigs_rgi_csv"
-
-# Combine all scaffolds.rgi.csv files into a single file
-cat "${output_dir}"/*/scaffolds.rgi.csv > "${output_dir}/combined_scaffolds_rgi_csv"
-
-# Merge combined_contigs_rgi.csv and combined_scaffolds_rgi.csv into a single file
-paste -d , "${output_dir}/combined_contigs_rgi_csv" "${output_dir}/combined_scaffolds_rgi_csv" > "${output_dir}/combined_contigs_scaffolds_rgi_csv"
-
+        --debug
 done
 ```
 This  script performs RGI (Resistance Gene Identifier) analysis on contigs and scaffolds generated from genome assembly for multiple samples. The script first purges modules and then loads the necessary module RGI, and sets up the RGI database by creating a symbolic link to the CARD (Comprehensive Antibiotic Resistance Database) localDB.
@@ -1040,7 +992,7 @@ module load abricate/1.0.1
 input_dir="./results/spades"
 
 # Set the output directory
-output_dir="./results/abricate_rgi"
+output_dir="./results/abricate"
 
 # Set the ABRICATE databases to use
 databases=("ncbi" "card" "argannot" "resfinder" "megares" "plasmidfinder" "vfdb")
@@ -1073,17 +1025,6 @@ for sample_dir in "${input_dir}"/*/; do
                  --mincov "${min_coverage}" \
                  "${sample_dir}/contigs.fasta" \
                  > "${output_dir}/${sample}/contigs_${db}.abricate.tsv"
-        csvformat -T "${output_dir}/${sample}/contigs_${db}.abricate.tsv" \
-                 >> "${output_dir}/${sample}/contigs_${db}.abricate.csv"
-
-     #Run ABRICATE on the scaffold files   
-        abricate --db "${db}" \
-                 --minid "${min_identity}" \
-                 --mincov "${min_coverage}" \
-                 "${sample_dir}/scaffolds.fasta" \
-                 > "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv"
-        csvformat -T "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv" \
-                 >> "${output_dir}/${sample}/contigs_${db}.abricate.csv"
 done
 ```
 
