@@ -1027,7 +1027,7 @@ iii) Run abricate amr genes analysis for all samples
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J abricate_rgi
+#SBATCH -J abricate
 #SBATCH -n 4
 
 #module purge to avoid clashing
@@ -1084,6 +1084,124 @@ for sample_dir in "${input_dir}"/*/; do
                  > "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv"
         csvformat -T "${output_dir}/${sample}/scaffolds_${db}.abricate.tsv" \
                  >> "${output_dir}/${sample}/contigs_${db}.abricate.csv"
+done
+```
+
+Extracting AMR data
+i) From RGI results
+```
+#!usr/bin/bashrc -l
+
+#load neccessary modules
+module purge
+module load R/4.2
+
+#open r console/studio in the terminal
+R
+
+# Set the input directory where the sample directories are located
+input_dir <- "./results/rgi"
+
+# Get a list of all sample directories in the input directory
+sample_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# create a vector of available for rgi results
+rgi_data_types <- c("json", "txt")
+
+for (rgi_data_type in rgi_data_types) {
+
+# Create an empty data frame to store the aggregated data
+agg_df <- data.frame()
+
+# Loop over each sample directory
+for (sample_dir in sample_dirs) {
+  # Get a list of all rgi result files in the current sample directory
+  file_list <- list.files(path = sample_dir, pattern = paste0("contigs_",rgi_data_type,".rgi.tsv.json|txt"), full.names = TRUE)
+
+  # Loop over each rgi result file
+  for (file in file_list) {
+    # Read the rgi data from the file
+    rgi_data <- read.delim(file, sep = "\t")
+	
+	# skip sample if no rgi data was found
+	if (nrow(rgi_data) == 0) {
+	next
+	}
+
+    # Extract the sample name from the file path
+    sample_name <- tools::file_path_sans_ext(basename(sample_dir))
+
+    # Add the sample name as a column in the data frame
+    rgi_data$sample_name <- sample_name
+
+    # Append the data to the aggregated data frame
+    agg_df <- rbind(agg_df, rgi_data)
+  }
+}
+
+# Set the output file name
+output_file <- paste0("combined_",rgi_data_type,"_rgi_data.csv")
+
+# Write the aggregated data to a CSV file
+write.csv(agg_df, file = output_file, row.names = FALSE)
+}
+done
+```
+ii) From ABRicate results
+```
+ABRicate
+#!usr/bin/bashrc -l
+
+#load neccessary modules
+module purge
+module load R/4.2
+
+#open r console/studio in the terminal
+R
+
+# Script for aggregating abricate data from multiple sample directories within a single input directory
+
+# Set the input directory where the sample directories are located
+input_dir <- "./results/abricate"
+
+# Get a list of all sample directories in the input directory
+sample_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# Create an empty data frame to store the aggregated data
+agg_df <- data.frame()
+
+# Loop over each sample directory
+for (sample_dir in sample_dirs) {
+  # Get a list of all abricate result files in the current sample directory
+  file_list <- list.files(path = sample_dir, pattern = "contigs_*.abricate.tsv", full.names = TRUE)
+  
+  # Loop over each abricate result file
+  for (file in file_list) {
+    # Read the abricate data from the file
+    abricate_data <- read.delim(file, sep = "\t")
+    
+    # Extract the sample name from the file path
+    sample_name <- tools::file_path_sans_ext(basename(file))
+    
+    # Add the sample name as a column in the data frame
+    abricate_data$sample_name <- sample_name
+    
+    # Append the data to the aggregated data frame
+    agg_df <- rbind(agg_df, abricate_data)
+  }
+}
+
+# Generate a timestamp for the output file name
+timestamp <- format(Sys.time(), "_%Y%m%d_%H%M%S")
+
+# Set the output file name
+output_file <- paste0("combined_abricate_data", timestamp, ".csv")
+
+# Write the aggregated data to a CSV file
+write.csv(agg_df, file = output_file, row.names = FALSE)
+
+# Print a message indicating the completion of the aggregation
+cat("Aggregation completed. The combined abricate data has been saved to", output_file, "\n")
 done
 ```
 14. Identification of virulence factors
