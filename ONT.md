@@ -475,8 +475,7 @@ do
         --num_threads 8 \
         --split_prodigal_jobs \
         --clean \
-        --debug \
-        2>&1 | tee "${output_dir}/${sample}/${sample}.rgi.log"
+        --debug 
 done
 ```
 OR
@@ -522,6 +521,7 @@ do
         --split_prodigal_jobs \
         --clean \
         --debug
+   done
 done
 ```
 ii) Using Abricate
