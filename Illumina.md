@@ -1122,7 +1122,7 @@ for (sample_dir in sample_dirs) {
     abricate_data <- read.delim(file, sep = "\t")
     
     # Extract the sample name from the file path
-    sample_name <- tools::file_path_sans_ext(basename(file))
+    sample_name <- tools::file_path_sans_ext(basename(sample_dir))
     
     # Add the sample name as a column in the data frame
     abricate_data$sample_name <- sample_name
