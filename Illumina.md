@@ -457,7 +457,7 @@ for file in ${input_dir}/*.fasta; do
     quast.py "$file" -t 4 -o "$output_path"
 done
 ```
-Savs and run
+Save and run
 ```
  sbatch -w compute05 run_quast.sh
  ```
@@ -717,7 +717,7 @@ done
 ```
 Save and run_blastn_search.sh
 ```
-run_blastn.sh
+sbatch run_blastn.sh
 ```
 iii) Doing all the *.contigs.fasta & *.scaffold.fasta
 ```
@@ -1097,10 +1097,11 @@ ABRicate
 module purge
 module load R/4.2
 
-#open r console/studio in the terminal
+#open R console/studio in the terminal
 R
 
-# Script for aggregating abricate data from multiple sample directories within a single input directory
+#Path to the Rscript
+#export PATH=".:$PATH"
 
 # Set the input directory where the sample directories are located
 input_dir <- "./results/abricate"
@@ -1108,41 +1109,48 @@ input_dir <- "./results/abricate"
 # Get a list of all sample directories in the input directory
 sample_dirs <- list.dirs(input_dir, recursive = FALSE)
 
+# create a vector of available abricate results
+abricate_data_types <- c("ncbi", "argannot", "card", "plasmidfinder", "resfinder", "vfdb", "megares")
+
+for (abricate_data_type in abricate_data_types) {
+
 # Create an empty data frame to store the aggregated data
 agg_df <- data.frame()
 
 # Loop over each sample directory
 for (sample_dir in sample_dirs) {
-  # Get a list of all abricate result files in the current sample directory
-  file_list <- list.files(path = sample_dir, pattern = "contigs_*.abricate.tsv", full.names = TRUE)
   
+  # Get a list of all abricate result files in the current sample directory
+  file_list <- list.files(path = sample_dir, pattern = paste0("contigs_",abricate_data_type,".abricate.tsv"), full.names = TRUE)
+
   # Loop over each abricate result file
-  for (file in file_list) {
+   for (file in file_list) {
+    
     # Read the abricate data from the file
     abricate_data <- read.delim(file, sep = "\t")
-    
+
+    # skip sample if no abricate data was found
+        if (nrow(abricate_data) == 0) {
+        next
+        }
+
     # Extract the sample name from the file path
     sample_name <- tools::file_path_sans_ext(basename(sample_dir))
-    
+
     # Add the sample name as a column in the data frame
     abricate_data$sample_name <- sample_name
-    
-    # Append the data to the aggregated data frame
+ 
+   # Append the data to the aggregated data frame
     agg_df <- rbind(agg_df, abricate_data)
   }
 }
 
-# Generate a timestamp for the output file name
-timestamp <- format(Sys.time(), "_%Y%m%d_%H%M%S")
-
 # Set the output file name
-output_file <- paste0("combined_abricate_data", timestamp, ".csv")
+output_file <- paste0("combined_",abricate_data_type,"_abricate_data.csv")
 
 # Write the aggregated data to a CSV file
 write.csv(agg_df, file = output_file, row.names = FALSE)
-
-# Print a message indicating the completion of the aggregation
-cat("Aggregation completed. The combined abricate data has been saved to", output_file, "\n")
+}
 done
 ```
 14. Identification of virulence factors
