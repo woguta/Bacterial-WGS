@@ -605,7 +605,7 @@ agg_df <- data.frame()
 # Loop over each sample directory
 for (sample_dir in sample_dirs) {
   # Get a list of all rgi result files in the current sample directory
-   file_list <- list.files(path = sample_dir, pattern = paste0("contigs_",rgi_data_type,".rgi.tsv.json|txt"), full.names = TRUE)
+   file_list <- list.files(path = sample_dir, pattern = paste0("contigs_",rgi_data_type,".json|txt"), full.names = TRUE)
 
   # Loop over each rgi result file
   for (file in file_list) {
