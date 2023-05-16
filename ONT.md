@@ -379,7 +379,9 @@ flye: This is the command to run Flye, the assembler for long-read sequencing da
 
 --iterations 4: This option specifies the maximum number of assembly iterations Flye will perform. In this case, Flye will perform up to 4 iterations to refine the assembly.
 
---debug: This option enables Flye to output debugging information to the console giving warning and troubleshooting issues with the assembly or fine-tuning the assembly parameters. for PLasmid assembly use flye/2.8.1
+--debug: This option enables Flye to output debugging information to the console giving warning and troubleshooting issues with the assembly or fine-tuning the assembly parameters.
+
+For PLasmid assembly use flye/2.8.1
 
 ```
 #!/usr/bin/bash -l
