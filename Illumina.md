@@ -1029,6 +1029,7 @@ done
 ```
 
 Extracting AMR data
+
 i) From RGI results
 ```
 #!usr/bin/bashrc -l
@@ -1088,6 +1089,7 @@ write.csv(agg_df, file = output_file, row.names = FALSE)
 }
 done
 ```
+
 ii) From ABRicate results
 ```
 ABRicate
