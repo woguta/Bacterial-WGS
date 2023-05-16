@@ -379,8 +379,62 @@ flye: This is the command to run Flye, the assembler for long-read sequencing da
 
 --iterations 4: This option specifies the maximum number of assembly iterations Flye will perform. In this case, Flye will perform up to 4 iterations to refine the assembly.
 
---debug: This option enables Flye to output debugging information to the console giving warning and troubleshooting issues with the assembly or fine-tuning the assembly parameters.
+--debug: This option enables Flye to output debugging information to the console giving warning and troubleshooting issues with the assembly or fine-tuning the assembly parameters. for PLasmid assembly use flye/2.8.1
 
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J plasmidflye
+#SBATCH -n 5
+
+#load required modules
+module purge
+module load flye/2.8.1
+
+# Define input and output directories
+input_dir="./results/porechop"
+output_dir="./results/plasmidflye"
+
+# Create output directory if it does not exist
+mkdir -p "${output_dir}"
+
+# Loop over all sample directories in the input directory
+for sample_dir in "${input_dir}"/*.fastq;
+do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_dir}" .fastq)
+
+    # Make output directory for this sample if it does not exist
+    mkdir -p "${output_dir}/${sample}"
+
+    # Define input fastq file path for this sample
+    input_fastq="${sample_dir}"
+
+#set genome size range
+   if [ "$species" == "staphylococcus" ]; then
+       genome_size="3m"
+   elif [ "$species" == "enterobacter" ]; then
+       genome_size="6m"
+   elif [ "$species" == "e.coli" ]; then
+      genome_size="6m"
+   elif [ "$species" == "pseudomonas" ]; then
+      genome_size="7m"
+   elif [ "$species" == "default" ]; then
+      genome_size="5m"
+  fi
+
+  # Run Flye with recommended parameters for bacterial denovo genome assembly
+    flye --plasmid \
+         --nano-corr "${input_fastq}" \
+         --out-dir "${output_dir}/${sample}" \
+         --genome-size "${genome_size}" \
+         --threads 5 \
+         --iteration 3 \
+         --iterations 4 \
+         --meta \
+         --debug
+done
+```
 11. Species Identification using blast
 
 ```
