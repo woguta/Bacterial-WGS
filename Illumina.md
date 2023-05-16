@@ -401,6 +401,71 @@ iii) Check thru
 ```
 cat ./results/spades/contigs.fasta
 ```
+
+For plasmid assembly
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J PlasmidSPAdes
+#SBATCH -n 5
+
+# module purge
+module purge
+
+# Load modules
+module load spades/3.15
+
+# Define input and output directories
+input_dir="./results/fastp"
+output_dir="./results/plasmid_assembly2"
+
+# Make output directory
+mkdir -p "${output_dir}"
+
+# Iterate over all files in input directory
+for file in ${input_dir}/*.R1.trim.fastq.gz; do
+  # Extract sample name from file name
+  sample=$(basename "${file}" .R1.trim.fastq.gz)
+
+  # Check if the corresponding read 2 file exists
+  file2=${input_dir}/${sample}.R2.trim.fastq.gz
+  if [ ! -f ${file2} ]; then
+    echo "Error: ${file2} not found!"
+    continue
+  fi
+
+  # Make output directory for this sample
+  mkdir -p "${output_dir}/${sample}"
+  #mkdir -p "${output_dir}/${sample}/${error_correction}"
+
+  # Run SPAdes for error correction
+  spades.py --only-error-correction \
+            -1 ${input_dir}/${sample}.R1.trim.fastq.gz \
+            -2 ${input_dir}/${sample}.R2.trim.fastq.gz \
+            -o ${output_dir}/${sample}/error_correction \
+            -t 5 \
+            --careful \
+            --phred-offset auto \
+            --disable-gzip-output \
+            --debug
+
+# Run SPAdes for plasmid assembly
+  spades.py --plasmid \
+            --only-assembler \
+            -1 ${output_dir}/${sample}/error_correction/corrected/$(basename ${file}) \
+            -2 ${output_dir}/${sample}/error_correction/corrected/$(basename ${file2}) \
+            -o ${output_dir}/${sample}/plasmid_assembly \
+            -t 5 \
+            -m 100 \
+            --careful \
+            --cov-cutoff auto \
+            --phred-offset auto \
+            --untrusted-contigs auto \
+            --disable-gzip-output \
+            --debug
+done
+```
+
 11.Genome Assessment [input file contigs.fasta)
 
 I) Genome contiguity
