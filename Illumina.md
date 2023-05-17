@@ -1296,4 +1296,9 @@ wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_AS
 ```
 b) Rename and gunzip: pseudomonas_aeruginosa_pao1_substrain_genome.fasta and pseudomonas_aeruginosa_pao1_substrain.gff
 
-c)
+c) Indexing the ref_genome using samtools faidx produces a .fai file consisting of five tab-separated columns: chrname, seqlength, first-base offset, seqlinewidth without \n (newline character) and seqlinewidth with\n. This is essential for samtools' operations and bcftools.
+
+```
+module load samtools/1.15.1
+```
+
