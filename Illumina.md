@@ -1276,3 +1276,24 @@ do
 done
 ```
 This loop uses a wildcard (*) to match all files with a .fasta extension in the INPUT_DIR. The loop then extracts the sample name from the file name (assuming that the file name ends with .fasta) and uses it to name the output file in the OUTPUT_DIR. The loop then runs the same blastn command for each sample, outputting the results to a separate file for each sample.
+
+15. Genome reference assembly
+
+a) Load our reference genome from NCBI, take fasta and gff
+	
+- On a web browser, open the link NCBI.
+
+- Type 'Pseudomonas aeruginosa' on the search box and select 'Genome' database.
+
+- Right click on the genome FASTA and select 'copy link'.
+
+- Use wget to fetch the files as follows:
+```
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_ASM676v1/GCF_000006765.1_ASM676v1_genomic.fna.gz .
+```
+```
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_ASM676v1/GCF_000006765.1_ASM676v1_genomic.gff.gz .
+```
+b) Rename and gunzip: pseudomonas_aeruginosa_pao1_substrain_genome.fasta and pseudomonas_aeruginosa_pao1_substrain.gff
+
+c)
