@@ -1301,4 +1301,27 @@ c) Indexing the ref_genome using samtools faidx produces a .fai file consisting 
 ```
 module load samtools/1.15.1
 ```
+```
+samtools faidx pseudomonas_aeruginosa_pao1_substrain_genome.fasta
+```
+d) In order to allow easy access of genome regions during read mapping we will index the reference genome using bowtie2, bowtie2-build outputs six files 1.bt2, .2.bt2, .3.bt2, .4.bt2, .rev.1.bt2, and .rev.2.bt2 all constituting the index and are all needed to align reads to the reference which will no longer be needed by bowtie after this indexing. The output is in binary format and can not be visualized like text.
+
+```
+# Load modules
+module purge
+module load bowtie2/2.5.0
+
+# Define the input file and output prefix
+input_file="./pseudomonas_aeruginosa_pao1_substrain_genome.fasta"
+output_dir="./results/bowtie"
+
+#Create output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Run Bowtie 2 indexing
+bowtie2-build \
+    --threads 4 \
+    "${input_file}" \
+    "${output_dir}"/PAO1
+```
 
