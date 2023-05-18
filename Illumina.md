@@ -1325,3 +1325,50 @@ bowtie2-build \
     "${output_dir}"/PAO1
 ```
 Run bowtie
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J bowtie2
+#SBATCH -n 10
+
+# Load modules
+module purge
+module load bowtie2/2.5.0
+module load samtools/1.15.1
+
+# Define the input_dir where the samples are located
+input_dir="./results/fastp/"
+output_dir="./results/bowtie/"
+
+# Make output_dir if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Loop over all sample files in input_dir
+for sample_file in "${input_dir}"/*.R1.trim.fastq; do
+    # Extract the sample name from the directory path
+    sample=$(basename "${sample_file%.*}")
+
+    # Define input file paths for the current sample
+    index_prefix="./results/bowtie/PAO1/PAO1"
+    fastq_1="${sample_file}"
+    fastq_2="${sample_file/R1.trim.fastq/R2.trim.fastq}"
+    output_prefix="./results/bowtie/${sample}"
+
+    echo "Processing sample: ${sample}"
+    echo "Fastq 1: ${fastq_1}"
+    echo "Fastq 2: ${fastq_2}"
+    echo "Index Prefix: ${index_prefix}"
+    echo "Output prefix: ${output_prefix}"
+
+    # Run Bowtie2 alignment and save BAM output
+    bowtie2 -x ${index_prefix} \
+            -1 ${fastq_1} \
+            -2 ${fastq_2} \
+            --threads 10 \
+            --un-conc-gz ${output_prefix}.unmapped.fastq.gz \
+            --local \
+            --very-sensitive-local \
+            2> ${output_prefix}.bowtie2.log \
+            | samtools view -@ 10 -F4 -bhS -o ${output_prefix}.bam -
+done
+```
