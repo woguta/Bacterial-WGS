@@ -1313,7 +1313,7 @@ module load bowtie2/2.5.0
 
 # Define the input file and output prefix
 input_file="./pseudomonas_aeruginosa_pao1_substrain_genome.fasta"
-output_dir="./results/bowtie"
+output_dir="./../results/bowtie/PAO1"
 
 #Create output directory if it doesn't exist
 mkdir -p "${output_dir}"
