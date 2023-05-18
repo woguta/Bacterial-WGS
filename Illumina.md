@@ -1324,4 +1324,4 @@ bowtie2-build \
     "${input_file}" \
     "${output_dir}"/PAO1
 ```
-
+Run bowtie
