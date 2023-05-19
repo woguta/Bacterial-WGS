@@ -1428,7 +1428,7 @@ samtools view ./results/bowtie/sorted/${sample}.sorted.bam | less -S
 samtools view ./results/bowtie/sorted/${sample}.sorted.bam | wc -l
 ```
 
--Count the number of reads mapping for a gene e.g NC_026433.1
+-Count the number of reads mapping for a gene e.g NC_002516.2
 ```
-samtools view ./results/bowtie/sorted/${sample}.sorted.bam | grep "NC_026433.1" | wc -l
+samtools view ./results/bowtie/sorted/${sample}.sorted.bam | grep "NC_002516.2" | wc -l
 ```
