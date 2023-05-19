@@ -1433,3 +1433,44 @@ samtools view ./results/bowtie/sorted/${sample}.sorted.bam | wc -l
 ```
 samtools view ./results/bowtie/sorted/${sample}.sorted.bam | grep "NP_252413.1" | wc -l
 ```
+h) Computing genome coverage using bedtools
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J bedtools_coverage
+#SBATCH -n 5
+
+# Load modules
+module purge
+module load bedtools/2.29.0
+
+# Define input and output directories
+input_dir="./results/bowtie/sorted"
+output_dir="./results/bowtie/coverage/"
+
+# Make output directory if it doesn't exist
+mkdir -p "$output_dir"
+
+# Loop over all sorted BAM files in the directory
+for bam_file in "$input_dir"/*.sorted.bam; do
+    # Extract the sample name from the file name
+    sample=$(basename "${bam_file%.*}")
+
+    # Define the output file path
+    output_file="$output_dir/${sample}.coverage"
+
+    echo "Processing sample: ${sample}"
+    echo "Output file: ${output_file}"
+
+    # Calculate genome coverage using bedtools
+    bedtools genomecov -d -ibam "$bam_file" > "$output_file"
+
+    echo "Genome coverage calculated for ${sample}"
+done
+```
+
+The output of this command is a three column file with chromosome, Position and depth coverage. View the ouput with the command below:
+
+```
+less ./data/bowtie/coverage/${sample}.coverage
+```
