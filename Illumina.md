@@ -278,10 +278,10 @@ ls -lth
 Check the nano slurm number and squeue
 
 ```
-nano slurm number
+nano slurm(number)
 
 ```
-Then 
+or 
 ```
 squeue
 ```
@@ -320,7 +320,7 @@ run the job as saved
 ```
 sbatch -w compute06 run_fastqc_trim.sh
 ```
-9. Genome Assembly using SPAdes for the trimmed files
+9. De-novo Genome Assembly using SPAdes for the trimmed files
 
 i) for one sample
 ```
@@ -402,7 +402,7 @@ iii) Check thru
 cat ./results/spades/contigs.fasta
 ```
 
-For plasmid assembly
+iv) For plasmid assembly
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -1279,13 +1279,13 @@ This loop uses a wildcard (*) to match all files with a .fasta extension in the 
 
 15. Genome reference assembly
 
-a) Load our reference genome from NCBI, take fasta and gff
+a) Load our reference genome from NCBI, take fasta and gff files
 	
 - On a web browser, open the link NCBI.
 
 - Type 'Pseudomonas aeruginosa' on the search box and select 'Genome' database.
 
-- Right click on the genome FASTA and select 'copy link'.
+- Right click on the genome FASTA and and gff, then select 'copy links'.
 
 - Use wget to fetch the files as follows:
 ```
@@ -1294,7 +1294,7 @@ wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_AS
 ```
 wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_ASM676v1/GCF_000006765.1_ASM676v1_genomic.gff.gz .
 ```
-b) Rename and gunzip: pseudomonas_aeruginosa_pao1_substrain_genome.fasta and pseudomonas_aeruginosa_pao1_substrain.gff
+b) Gunzip and rename: pseudomonas_aeruginosa_pao1_substrain_genome.fasta and pseudomonas_aeruginosa_pao1_substrain.gff
 
 c) Indexing the ref_genome using samtools faidx produces a .fai file consisting of five tab-separated columns: chrname, seqlength, first-base offset, seqlinewidth without \n (newline character) and seqlinewidth with\n. This is essential for samtools' operations and bcftools.
 
@@ -1324,7 +1324,7 @@ bowtie2-build \
     "${input_file}" \
     "${output_dir}"/PAO1
 ```
-e) Run bowtie..do ref. genome assembly
+e) Run bowtie for reference genome assembly
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -1372,7 +1372,7 @@ for sample_file in "${input_dir}"/*.R1.trim.fastq; do
             | samtools view -@ 10 -F4 -bhS -o ${output_prefix}.bam -
 done
 ```
-f) Sort the bam files output from bowtie
+f) Sort the bam files output from bowtie results. In order to perform any analysis and visualize the alingment, the alignment should be sorted in the order which they occur in the reference genome based on their alignment coordinates. Indexing the sorted bam files allows viiewing using various tools like IGV to extract alignments or information like mutation. Soting gives sotred.bam file while indexing generates an index file with .bam.bai extention.
 
 ```
 #!/usr/bin/bash -l
@@ -1408,5 +1408,27 @@ for bam_file in "$input_dir"/*.R1.trim.fastq.bam; do
         "$bam_file"
 
     echo "BAM sorting completed for sample: ${sample}"
+
+    #Index the sorted BAM file
+    samtools index -@4 "$sorted_bam"
+    
+    echo "BAM indexing completed for sample: ${sample}"
 done
+```
+g) Assessment/Viewing of the sequences using samtools view
+
+-View the whole alignment 'BAM' file.
+
+```
+samtools view ./results/bowtie/sorted/${sample}.sorted.bam | less -S
+```
+
+-Count the number of reads in the alignment.
+```
+samtools view ./results/bowtie/sorted/${sample}.sorted.bam | wc -l
+```
+
+-Count the number of reads mapping for a gene e.g NC_026433.1
+```
+samtools view ./results/bowtie/sorted/${sample}.sorted.bam | grep "NC_026433.1" | wc -l
 ```
