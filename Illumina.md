@@ -1474,3 +1474,50 @@ The output of this command is a three column file with chromosome, Position and 
 ```
 less ./results/bowtie/coverage/${sample}.coverage
 ```
+h) Plot the genome coverage in R
+
+```
+# Load modules
+module purge
+module load R/4.3
+R
+library(ggplot2)
+
+# Define input and output directories
+input_dir <- "./results/bowtie/coverage"
+output_dir <- "./results/bowtie/coverage/plots"
+
+# Make output directory if it doesn't exist
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Get a list of sorted coverage files in the directory
+coverage_files <- list.files(path = input_dir, pattern = "\\.sorted\\.coverage$", full.names = TRUE)
+
+# Loop over all sorted coverage files
+for (coverage_file in coverage_files) {
+  # Extract the sample name from the file name
+  sample <- basename(tools::file_path_sans_ext(coverage_file))
+  
+  # Define the output file path
+  output_file <- file.path(output_dir, paste0(sample, "_genome_coverage.png"))
+  
+  cat("Processing sample:", sample, "\n")
+  cat("Output file:", output_file, "\n")
+  cat("Generating genome coverage plot for", sample, "\n")
+  
+  # Read the coverage data into a data frame
+  coverage_data <- read.table(coverage_file, header = FALSE, col.names = c("Chromosome", "Position", "Coverage"))
+  
+  # Plot the genome coverage
+  ggplot2::ggplot(coverage_data, ggplot2::aes(x = Position, y = Coverage)) +
+    ggplot2::geom_line() +
+    ggplot2::labs(x = "Position", y = "Coverage") +
+    ggplot2::ggtitle("Genome Coverage") +
+    ggplot2::theme_minimal()
+  
+  # Save the plot as a PNG file
+  ggplot2::ggsave(output_file, width = 10, height = 6, dpi = 300)
+  
+  cat("Genome coverage plot generated for", sample, "\n")
+}
+```
