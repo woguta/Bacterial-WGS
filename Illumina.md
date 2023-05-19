@@ -1324,7 +1324,7 @@ bowtie2-build \
     "${input_file}" \
     "${output_dir}"/PAO1
 ```
-Run bowtie
+e) Run bowtie..do ref. genome assembly
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -1370,5 +1370,43 @@ for sample_file in "${input_dir}"/*.R1.trim.fastq; do
             --very-sensitive-local \
             2> ${output_prefix}.bowtie2.log \
             | samtools view -@ 10 -F4 -bhS -o ${output_prefix}.bam -
+done
+```
+f) Sort the bam files output from bowtie
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J samtools_sort
+#SBATCH -n 5
+
+# Load modules
+module purge
+module load samtools/1.15.1
+
+# Define input and output directories
+input_dir="./results/bowtie/"
+output_dir="./results/bowtie/sorted/"
+
+# Make output directory if it doesn't exist
+mkdir -p "$output_dir"
+
+# Loop over all sample files in the input directory
+for bam_file in "$input_dir"/*.R1.trim.fastq.bam; do
+    # Extract the sample name from the file path
+    sample=$(basename "${bam_file%.*}")
+
+    # Define the output file path for the sorted BAM
+    sorted_bam="$output_dir/${sample}.sorted.bam"
+
+    echo "Sorting BAM for sample: ${sample}"
+
+    # Sort the BAM file using samtools
+    samtools sort -@ 4 \
+        -o "$sorted_bam" \
+        -T "$output_dir/${sample}" \
+        "$bam_file"
+
+    echo "BAM sorting completed for sample: ${sample}"
 done
 ```
