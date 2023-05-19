@@ -1472,5 +1472,5 @@ done
 The output of this command is a three column file with chromosome, Position and depth coverage. View the ouput with the command below:
 
 ```
-less ./data/bowtie/coverage/${sample}.coverage
+less ./results/bowtie/coverage/${sample}.coverage
 ```
