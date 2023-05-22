@@ -835,93 +835,12 @@ This assumes that the input_dir/
 
 View the blast
 ```
-less -S ./results/blast/contigs.fasta.vs.nt.cul5.1e25.megablast.out
+less -S ./results/blast/${sample}/contigs.fasta.vs.nt.cul5.1e25.megablast.out
 ```
 ```
-less -S ./results/blast/scaffolds.fasta.vs.nt.cul5.1e25.megablast.out
+less -S ./results/blast/${sample}/scaffolds.fasta.vs.nt.cul5.1e25.megablast.out
 ```
-iv) Generate summary files and taxonomic classification
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J blast_contigs_scaffold_summary
-#SBATCH -n 4
-
-#module purge to avoid clashing
-module purge
-
-# Set the input directory
-input_dir="./results/blast"
-
-# Set the output directory for the combined blast summary file
-blast_summary_combined="./results/blast_summary_combined"
-
-# Create output directories if they don't exist
-mkdir -p "$blast_summary_combined"
-
-# Declare an array to store the path of each sample's blast summary directory
-declare -a sample_blast_summaries
-
-for sample in "${input_dir}/"*/ ; do
-    # Set input files
-    contigs_blast_out="${sample}contigs.vs.nt.cul5.1e25.megablast.out"
-    scaffolds_blast_out="${sample}scaffolds.vs.nt.cul5.1e25.megablast.out"
-
-    # Output files
-    contigs_summary="${sample}contigs_summary.txt"
-    scaffolds_summary="${sample}scaffolds_summary.txt"
-
-    # Output directory for the sample summary files
-    sample_blast_summary="${blast_summary_combined}/${sample##*/}"
-    mkdir -p "$sample_blast_summary"
-    sample_blast_summaries+=("$sample_blast_summary")
-
-    # Generate blast summary for contigs
-    echo "Sample ID,Query ID,Subject ID,% Identity,Alignment Length,Mismatches,Gap Opens,Q. Start,Q. End,S. Start,S. End,E-value,Bit Score,Organism,Kingdom,Phylum,Class,Order,Family,Genus,Species" > $contigs_summary
-    awk -F '\t' '{
-        print FILENAME","$1","$2","$3","$4","$5","$6","$7","$8","$9","$10","$11","$12","$13;
-
-        # Get taxonomic classification from the subject ID
-        split($2, subject_id_parts, "|");
-        organism = subject_id_parts[length(subject_id_parts) - 1];
-        genus = subject_id_parts[length(subject_id_parts) - 2];
-        family = subject_id_parts[length(subject_id_parts) - 3];
-        order = subject_id_parts[length(subject_id_parts) - 4];
-        class = subject_id_parts[length(subject_id_parts) - 5];
-        phylum = subject_id_parts[length(subject_id_parts) - 6];
-        kingdom = subject_id_parts[length(subject_id_parts) - 7];
-        print ","organism","kingdom","phylum","class","order","family","genus;
-    }' $contigs_blast_out >> $contigs_summary
-
-    # Generate blast summary for scaffolds
-    echo "Sample ID,Query ID,Subject ID,% Identity,Alignment Length,Mismatches,Gap Opens,Q. Start,Q. End,S. Start,S. End,E-value,Bit Score,Organism,Kingdom,Phylum,Class,Order,Family,Genus,Species" > $scaffolds_summary
-    awk -F '\t' '{
-        print FILENAME","$1","$2","$3","$4","$5","$6","$7","$8","$9","$10","$11","$12","$13;
-
-        # Get taxonomic classification from the subject ID
-        split($2, subject_id_parts, "|");
-        organism = subject_id_parts[length(subject_id_parts) - 1];
-        genus = subject_id_parts[length(subject_id_parts) - 2];
-        family = subject_id_parts[length(subject_id_parts) - 3];
-        order = subject_id_parts[length(subject_id_parts) - 4];
-        class = subject_id_parts[length(subject_id_parts) - 5];
-        phylum = subject_id_parts[length(subject_id_parts) - 6];
-        kingdom = subject_id_parts[length(subject_id_parts) - 7];
-        print ","organism","kingdom","phylum","class","order","family","genus;
-    }' $contigs_blast_out >> $scaffolds_summary
-
-done
-
-# Combine all contigs summary files into a single file
-cat "${sample_blast_summaries[@]}"*/contigs_summary_taxa.txt > "${blast_summary_combined}/combined_blast_summary_contigs.csv"
-
-# Combine all scaffolds summary files into a single file
-cat "${sample_blast_summaries[@]}"*/scaffolds_summary_taxa.txt > "${blast_summary_combined}/combined_blast_summary_scaffolds.csv"
-
-# Merge contigs and scaffolds summary files into a single file
-paste -d , "${blast_summary_combined}/combined_blast_summary_contigs.csv" "${blast_summary_combined}/combined_blast_summary_scaffolds.csv" > "${blast_summary_combined}/combined_blast_summary.csv"
-```
-v) Extracting blast data
+iv) Extracting blast data
 ```
 #load neccessary modules
 module purge
