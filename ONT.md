@@ -485,6 +485,53 @@ NB Cancelling a slurm job using scancel <job_ID>
 ```
 scancel 3114
 ```
+NB: Deleting all files within a given away from it, but be careful oh!
+```
+rm -rf ./path/to/the/file/folder/*
+```
+Extracting blast results
+```
+#remove all list saved in R in the terminal
+rm(list = ls())
+
+# Set the input directory where the sample directories are located
+input_dir <- "./results/blast"
+
+# Get a list of all file directories in the input directory
+file_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# Create a vector of available blast result files
+blast_data_files <- list.files(path = input_dir, pattern = ".*\\.vs\\.nt\\.cul5\\.1e25\\.megablast\\.out$", full.names = TRUE)
+
+# Create an empty data frame to store the aggregated data
+agg_df <- data.frame()
+
+# Loop over each blast result file
+for (blast_file in blast_data_files) {
+  # Read the blast data from the file
+  blast_data <- read.delim(blast_file, sep = "\t", header = FALSE)
+
+  # Skip file if no blast data was found
+  if (nrow(blast_data) == 0) {
+    next
+  }
+
+  # Extract the sample name from the file path
+  sample_name <- tools::file_path_sans_ext(basename(blast_file))
+
+  # Add the sample name as a column in the data frame
+  blast_data$sample_name <- sample_name
+
+  # Append the data to the aggregated data frame
+  agg_df <- rbind(agg_df, blast_data)
+}
+
+# Set the output file name
+output_file <- "./results/combined_blast_data.csv"
+
+# Write the aggregated data to a CSV file
+write.csv(agg_df, file = output_file, row.names = FALSE)
+```
 12. AMR Identification
 i) Using RGI
 ```
