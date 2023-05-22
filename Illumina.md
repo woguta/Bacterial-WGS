@@ -921,6 +921,64 @@ cat "${sample_blast_summaries[@]}"*/scaffolds_summary_taxa.txt > "${blast_summar
 # Merge contigs and scaffolds summary files into a single file
 paste -d , "${blast_summary_combined}/combined_blast_summary_contigs.csv" "${blast_summary_combined}/combined_blast_summary_scaffolds.csv" > "${blast_summary_combined}/combined_blast_summary.csv"
 ```
+v) Extracting blast data
+```
+#load neccessary modules
+module purge
+module load R/4.2
+
+#open r console/studio in the terminal
+R
+
+#remove all list saved in R in the terminal
+rm(list = ls())
+
+# Set the input directory where the sample directories are located
+input_dir <- "./results/blast"
+
+# Get a list of all sample directories in the input directory
+sample_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# Create a vector of available blast result files
+blast_data_types <- c("contigs", "scaffolds")
+
+for (blast_data_type in blast_data_types) {
+  # Create an empty data frame to store the aggregated data
+  agg_df <- data.frame()
+
+  # Loop over each sample directory
+  for (sample_dir in sample_dirs) {
+    # Get a list of all blast result files in the current sample directory
+    file_list <- list.files(path = sample_dir, pattern = paste0(blast_data_type, ".vs.nt.cul5.1e25.megablast.out"), full.names = TRUE)
+
+    # Loop over each blast result file
+    for (file in file_list) {
+      # Read the blast data from the file
+      blast_data <- read.delim(file, sep = "\t", header = FALSE)
+
+      # Skip sample if no blast data was found
+      if (nrow(blast_data) == 0) {
+        next
+      }
+
+      # Extract the sample name from the file path
+      sample_name <- tools::file_path_sans_ext(basename(sample_dir))
+
+      # Add the sample name as a column in the data frame
+      blast_data$sample_name <- sample_name
+
+      # Append the data to the aggregated data frame
+      agg_df <- rbind(agg_df, blast_data)
+    }
+  }
+
+  # Set the output file name
+  output_file <- paste0("combined_", blast_data_type, "_blast_data.csv")
+
+  # Write the aggregated data to a CSV file
+  write.csv(agg_df, file = output_file, row.names = FALSE)
+}}
+```
 13. AMR Identification
 
 Use Resistance Gene Identifier (RGI) which applies Comprehensive Antibiotic Resistance Database (CARD) as a reference to predict antibiotic resistome(s) from protein or nucleotide data based on homology and SNP models.
@@ -1076,7 +1134,7 @@ for sample_dir in "${input_dir}"/*/; do
 done
 ```
 
-**Extracting AMR data
+##Extracting AMR data
 
 i) From RGI results
 ```
@@ -1204,7 +1262,7 @@ write.csv(agg_df, file = output_file, row.names = FALSE)
 done
 ```
 
-**Transforming/extracting AMR counts per sample
+##Transforming/extracting AMR counts per sample
 ```
 #load required libraries
 library(tidyverse)
