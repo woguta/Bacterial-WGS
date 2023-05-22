@@ -1076,7 +1076,7 @@ for sample_dir in "${input_dir}"/*/; do
 done
 ```
 
-Extracting AMR data
+**Extracting AMR data
 
 i) From RGI results
 ```
@@ -1202,6 +1202,33 @@ output_file <- paste0("combined_",abricate_data_type,"_abricate_data.csv")
 write.csv(agg_df, file = output_file, row.names = FALSE)
 }
 done
+```
+
+**Transforming/extracting AMR counts per sample
+```
+#load required libraries
+library(tidyverse)
+
+# read in the data
+rgi_data <- read.csv("combined_json_rgi_data.csv")
+
+# select the columns of interest
+rgi_data_subset <- rgi_data %>% select(Best_Hit_ARO, sample_name)
+
+# covert data to long format and get counts
+ARO_counts <- rgi_data_subset %>%
+  group_by(sample_name)%>%
+  count(Best_Hit_ARO)
+
+# convert the data to wide format
+ARO_counts_wide <- ARO_counts %>% 
+  pivot_wider(names_from = Best_Hit_ARO, values_from = n)
+
+# convert NAs to zeros
+ARO_counts_wide[is.na(ARO_counts_wide)] <- 0
+
+# write the data to csv file
+write.csv(ARO_counts_wide, "ARO_counts.csv", row.names = FALSE)
 ```
 14. Identification of virulence factors
 
