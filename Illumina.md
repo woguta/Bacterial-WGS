@@ -1525,3 +1525,47 @@ for (coverage_file in coverage_files) {
   cat("Genome coverage plot generated for", sample, "\n")
 }
 ```
+14. Variants calling
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J ivar_variants_calling
+#SBATCH -n 5
+
+#load necessary modules
+module purge
+module load samtools/1.15.1
+module load ivar/1.3.1
+
+# Specify the directory containing the sorted BAM files
+input_dir="./results/bowtie/sorted_indexed"
+output_dir="./results/ivar_variants"
+
+# Make output directory if not available
+mkdir -p "${output_dir}"
+
+# Iterate over each sorted BAM file in the directory
+for bam_file in "$input_dir"/*.sorted.bam; do
+    # Extract the file name without the extension
+    filename=$(basename "$bam_file" .sorted.bam)
+
+    # Run samtools mpileup and ivar variants for each BAM file
+    samtools mpileup \
+        --ignore-overlaps \
+        --count-orphans \
+        --no-BAQ \
+        --max-depth 0 \
+        --min-BQ 0 \
+        --reference ./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta \
+        "$bam_file" \
+        | ivar variants \
+            -t 0.25 \
+            -q 20 \
+            -m 10 \
+            -g ./genome_ref/pseudomonas_aeruginosa_pao1_substrain.gff \
+            -r ./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta \
+            -p "${output_dir}/${filename}.variants"
+
+    echo "Processed ${bam_file}"
+done
+```
