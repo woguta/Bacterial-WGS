@@ -1525,7 +1525,10 @@ for (coverage_file in coverage_files) {
   cat("Genome coverage plot generated for", sample, "\n")
 }
 ```
-14. Variants calling
+14. Variants callings
+
+i) Using Ivar and Samtools mpileup
+
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -1565,6 +1568,92 @@ for bam_file in "$input_dir"/*.sorted.bam; do
             -g ./genome_ref/pseudomonas_aeruginosa_pao1_substrain.gff \
             -r ./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta \
             -p "${output_dir}/${filename}.variants"
+
+    echo "Processed ${bam_file}"
+done
+```
+ii) Comprehensive variant calling using GATK and Vep
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Gatk_vep_variant_calls
+#SBATCH -n 10
+
+# Load necessary modules
+module purge
+module load samtools/1.15.1
+module load gatk/4.4.0.0
+module load vep/109.3
+module load picard/2.27.5
+
+# Specify the directory containing the sorted BAM files
+input_dir="./results/bowtie/sorted_indexed"
+output_dir="./results/gatkvep_variants"
+
+# Make output directory if not available
+mkdir -p "${output_dir}"
+
+# Specify the path to the reference genome and GFF files
+reference="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta"
+gff="./genome_ref/pseudomonas_aeruginosa_pao1_substrain.gff"
+
+# Create the sequence dictionary file for the reference genome
+gatk CreateSequenceDictionary -R "$reference" -O "${reference%.*}.dict"
+
+# Specify the path to the sequence dictionary file
+dict_file="${reference%.*}.dict"
+
+# Iterate over each sorted BAM file in the input directory
+for bam_file in "$input_dir"/*.sorted.bam; do
+    # Extract the file name without the extension
+    filename=$(basename "$bam_file" .sorted.bam)
+
+    # Step 1: Variant Calling using GATK HaplotypeCaller
+    gatk HaplotypeCaller \
+        -R "$reference" \
+        -I "$bam_file" \
+        -O "${output_dir}/${filename}.vcf.gz" \
+        -ERC GVCF \
+        --sequence-dictionary "$dict_file"
+
+ # Step 2: Joint Genotyping using GATK GenomicsDBImport and GenotypeGVCFs
+    gatk GenomicsDBImport \
+        --genomicsdb-workspace-path "${output_dir}/${filename}_db" \
+        --intervals "$reference" \
+        -L "$reference" \
+        --sample-name-map "${output_dir}/sample_map.txt"
+
+    gatk GenotypeGVCFs \
+        -R "$reference" \
+        -V gendb://"${output_dir}/${filename}_db" \
+        -O "${output_dir}/${filename}_raw.vcf.gz"
+
+    # Step 3: Variant Filtering using GATK VariantFiltration
+    gatk VariantFiltration \
+        -R "$reference" \
+        -V "${output_dir}/${filename}_raw.vcf.gz" \
+        --filter-expression "QUAL < 30.0 || QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0" \
+        --filter-name "PASS_FILTER" \
+        -O "${output_dir}/${filename}_filtered.vcf.gz"
+   
+    # Step 4: Variant Annotation using VEP (Variant Effect Predictor)
+    vep -i "${output_dir}/${filename}_filtered.vcf.gz" \
+        -o "${output_dir}/${filename}_annotated.vcf" \
+        --fasta "$reference" \
+        --cache \
+        --dir_cache /export/apps/vep/109.3/cache \
+        --species "Pseudomonas aeruginosa" \
+        --force_overwrite \
+        --merged \
+        --no_stats \
+        --no_intergenic \
+        --flag_pick_allele_gene \
+        --symbol \
+        --canonical \
+        --biotype \
+        --pubmed \
+        --vcf_info_field "ANN" \
+        --gff "$gff"
 
     echo "Processed ${bam_file}"
 done
