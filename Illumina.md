@@ -1576,15 +1576,16 @@ ii) Comprehensive variant calling using GATK and Vep
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J Gatk_vep_variant_calls
+#SBATCH -J GATKVep_VC
 #SBATCH -n 10
 
 # Load necessary modules
 module purge
 module load samtools/1.15.1
+module load java/17
+module load picard/2.27.5
 module load gatk/4.4.0.0
 module load vep/109.3
-module load picard/2.27.5
 
 # Specify the directory containing the sorted BAM files
 input_dir="./results/bowtie/sorted_indexed"
@@ -1595,7 +1596,7 @@ mkdir -p "${output_dir}"
 
 # Specify the path to the reference genome and GFF files
 reference="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta"
-gff="./genome_ref/pseudomonas_aeruginosa_pao1_substrain.gff"
+gff="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.gff"
 
 # Create the sequence dictionary file for the reference genome
 gatk CreateSequenceDictionary -R "$reference" -O "${reference%.*}.dict"
@@ -1603,58 +1604,95 @@ gatk CreateSequenceDictionary -R "$reference" -O "${reference%.*}.dict"
 # Specify the path to the sequence dictionary file
 dict_file="${reference%.*}.dict"
 
+# Create an empty sample map file
+sample_map_file="${output_dir}/sample_map.txt"
+> "$sample_map_file"
+
 # Iterate over each sorted BAM file in the input directory
-for bam_file in "$input_dir"/*.sorted.bam; do
-    # Extract the file name without the extension
-    filename=$(basename "$bam_file" .sorted.bam)
+for bam_file in "$input_dir"/*.fastq.sorted.bam; do
+    # Extract the file name without extension
+    sample_name=$(basename "$bam_file" .sorted.bam)
+
+    # Get the desired sample name based on the filename
+    desired_sample_name="${sample_name}"
+
+    # Update the desired sample name in the BAM file
+    samtools view -H "$bam_file" | sed -e "s/SM:${sample_name}/SM:${desired_sample_name}/" | samtools view -bS - > "${output_dir}/${desired_sample_name}.sorted.bam"
+ 
+   # Check if the BAM file was successfully updated
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to update sample name in BAM file: ${bam_file}"
+        exit 1
+    fi
+
+    #Index the sorted BAM file
+    samtools index -@4 "${output_dir}/${desired_sample_name}.sorted.bam"
+
+    echo "Sample Name: ${desired_sample_name}.sorted.bam"
+    echo "Indexed Sample Name: ${output_dir}/${desired_sample_name}.bam.fai"
+
+    # Add the desired sample name to the sample map file
+    echo "${desired_sample_name} ${output_dir}/${desired_sample_name}.sorted.bam" >> "$sample_map_file"
+    echo "${desired_sample_name} ${output_dir}/${desired_sample_name}.sorted.bam.fai" >> "$sample_map_file"
+
+    # Define input files
+    input_file="${output_dir}/${desired_sample_name}.sorted.bam"
+
+    # Define output file
+    output_file="${output_dir}/${desired_sample_name}.vcf.gz"
+
+     echo $reference
+     echo $input_file
+     echo $output_file
+     echo $dict_file
 
     # Step 1: Variant Calling using GATK HaplotypeCaller
-    gatk HaplotypeCaller \
+    gatk --java-options "-Xmx4g" HaplotypeCaller \
         -R "$reference" \
-        -I "$bam_file" \
-        -O "${output_dir}/${filename}.vcf.gz" \
-        -ERC GVCF \
+        -I "$input_file" \
+        -O "$output_file" \
         --sequence-dictionary "$dict_file"
 
- # Step 2: Joint Genotyping using GATK GenomicsDBImport and GenotypeGVCFs
-    gatk GenomicsDBImport \
-        --genomicsdb-workspace-path "${output_dir}/${filename}_db" \
-        --intervals "$reference" \
-        -L "$reference" \
-        --sample-name-map "${output_dir}/sample_map.txt"
-
-    gatk GenotypeGVCFs \
-        -R "$reference" \
-        -V gendb://"${output_dir}/${filename}_db" \
-        -O "${output_dir}/${filename}_raw.vcf.gz"
-
-    # Step 3: Variant Filtering using GATK VariantFiltration
-    gatk VariantFiltration \
-        -R "$reference" \
-        -V "${output_dir}/${filename}_raw.vcf.gz" \
-        --filter-expression "QUAL < 30.0 || QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0" \
-        --filter-name "PASS_FILTER" \
-        -O "${output_dir}/${filename}_filtered.vcf.gz"
-   
-    # Step 4: Variant Annotation using VEP (Variant Effect Predictor)
-    vep -i "${output_dir}/${filename}_filtered.vcf.gz" \
-        -o "${output_dir}/${filename}_annotated.vcf" \
-        --fasta "$reference" \
-        --cache \
-        --dir_cache /export/apps/vep/109.3/cache \
-        --species "Pseudomonas aeruginosa" \
-        --force_overwrite \
-        --merged \
-        --no_stats \
-        --no_intergenic \
-        --flag_pick_allele_gene \
-        --symbol \
-        --canonical \
-        --biotype \
-        --pubmed \
-        --vcf_info_field "ANN" \
-        --gff "$gff"
-
-    echo "Processed ${bam_file}"
+    echo "Variant Calling completed for ${desired_sample_name}"
 done
+
+# Step 2: Joint Genotyping using GATK GenomicsDBImport and GenotypeGVCFs
+gatk --java-options "-Xmx4g" GenomicsDBImport \
+    --genomicsdb-workspace-path "${output_dir}/genomicsdb" \
+    --sample-name-map "$sample_map_file"
+
+gatk --java-options "-Xmx4g" GenotypeGVCFs \
+    -R "$reference" \
+    -V gendb://"${output_dir}/genomicsdb" \
+    -O "${output_dir}/joint_genotyped.vcf.gz"
+
+# Step 3: Variant Filtering using GATK VariantFiltration
+gatk --java-options "-Xmx4g" VariantFiltration \
+    -R "$reference" \
+    -V "${output_dir}/joint_genotyped.vcf.gz" \
+    --filter-expression "QUAL < 30.0 || QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0" \
+    --filter-name "PASS_FILTER" \
+    -O "${output_dir}/filtered_variants.vcf.gz"
+
+# Step 4: Variant Annotation using VEP (Variant Effect Predictor)
+vep -i "${output_dir}/filtered_variants.vcf.gz" \
+    -o "${output_dir}/annotated_variants.vcf" \
+    --fasta "$reference" \
+    --cache \
+    --dir_cache /export/apps/vep/109.3/cache \
+    --species "Pseudomonas aeruginosa" \
+    --force_overwrite \
+    --merged \
+    --no_stats \
+    --no_intergenic \
+    --flag_pick_allele_gene \
+    --symbol \
+    --canonical \
+    --biotype \
+    --pubmed \
+    --vcf_info_field "ANN" \
+    --gff "$gff"
+
+echo "Joint Genotyping and annotation completed"
+echo "Done"
 ```
