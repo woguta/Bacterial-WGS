@@ -1696,3 +1696,97 @@ vep -i "${output_dir}/filtered_variants.vcf.gz" \
 echo "Joint Genotyping and annotation completed"
 echo "Done"
 ```
+iii) Comprehensive indexing of ref_genome, aligning reads, variants calling and annotation done at once using bwa, samtools and bcftools
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J BwaBcf_VC
+#SBATCH -n 16
+
+#Exit immediately if a command exits with a non-zero status
+set -e
+
+# Load necessary modules
+module purge
+module load bwa/0.7.17
+module load samtools/1.15.1
+module load bcftools/1.15.1
+
+# Specify the directory containing the trimmed fastq files
+input_dir="./results/fastp"
+output_dir="./results/bwamem"
+output_dir2="./results/bcf_variants"
+
+# Define the path to the reference genome FASTA file
+reference_file="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta"
+
+# Make output directory if not available
+mkdir -p "${output_dir}"
+mkdir -p "${output_dir2}"
+
+# Define the output prefix for the index files and its directory
+reference_prefix="${output_dir}/PAO1/PAO1"
+mkdir -p "${reference_prefix}"
+
+# Step 1: Index the reference genome
+echo "Indexing the reference genome..."
+bwa index -p "${reference_prefix}" -a bwtsw "${reference_file}"
+
+# Step 2: Perform alignment and generate sorted BAM files for each sample
+echo "Performing alignment..."
+for sample_file in "${input_dir}"/*.R1.trim.fastq.gz; do
+    sample_name=$(basename "${sample_file}" .R1.trim.fastq.gz)
+    echo "Processing sample: ${sample_name}"
+    bwa mem -t 16 "${reference_prefix}" "${sample_file}" "${input_dir}/${sample_name}.R2.trim.fastq.gz" |
+    samtools view -bS - |
+    samtools sort -@ 16 -o "${output_dir}/${sample_name}.sorted.bam" -
+    samtools index "${output_dir}/${sample_name}.sorted.bam"
+done
+
+# Some stats
+echo "Generating alignment statistics..."
+for sorted_bam in "${output_dir}"/*.sorted.bam; do
+    sample_name=$(basename "${sorted_bam}" .sorted.bam)
+    samtools flagstat "${sorted_bam}"
+done
+
+# Step 3: Perform variant calling on each sample
+echo "Performing variant calling..."
+for sorted_bam in "${output_dir}"/*.sorted.bam; do
+    sample_name=$(basename "${sorted_bam}" .sorted.bam)
+    echo "Processing sample: ${sample_name}"
+    bcftools mpileup -Ou -f "${reference_file}" "${sorted_bam}" |
+    bcftools call --threads 16 --ploidy 1 -Ou -mv -o "${output_dir2}/${sample_name}.vcf"
+done
+
+# Step 4: Filter and report the SNVs variants in variant calling format (VCF)
+echo "Filtering variants..."
+for vcf_file in "${output_dir2}"/*.vcf; do
+    sample_name=$(basename "${vcf_file}" .vcf)
+    echo "Processing sample: ${sample_name}"
+    bcftools filter -t 16 -i 'QUAL > 20' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
+done
+
+# Step 5: Index the filtered VCF files
+echo "Indexing filtered VCF files..."
+for filtered_vcf in "${output_dir2}"/*.filtered.vcf; do
+    echo "Indexing: ${filtered_vcf}"
+    bcftools index -t 10 "${filtered_vcf}"
+done
+
+# Step 6: Variant Annotation with GFF file
+echo "Performing variant annotation..."
+gff_file="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.gff"
+
+# Create output directory for annotated variants
+annotated_dir="./results/annotated_variants"
+mkdir -p "${annotated_dir}"
+
+for vcf_file in "${output_dir2}"/*.filtered.vcf; do
+    sample_name=$(basename "${vcf_file}" .filtered.vcf)
+    echo "Processing sample: ${sample_name}"
+    bcftools annotate --annotations "${gff_file}" --columns INFO/ANN --threads 16 "${vcf_file}" > "${annotated_dir}/${sample_name}_annotated.vcf"
+done
+
+echo "Variant calling and annotation complete."
+```
