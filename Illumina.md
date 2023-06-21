@@ -448,7 +448,47 @@ for file in ${input_dir}/*.R1.trim.fastq.gz; do
             --debug
 done
 ```
+vii) Identify the plasmids/annotate
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J PlasmidID
+#SBATCH -n 16
 
+# Enable debugging and abort on error
+ set -e
+
+# Load modules
+module purge
+module load plasmidid/1.6.3
+
+#Define input and output directories
+input_dir="./results/plasmid_assembly"
+output_dir="./results/plasmidID"
+output_db="./plasmidplsdb"
+dateNow=`date +"%Y-%m-%d"`
+#dateNow="2023-06-21"
+
+# Make output directory
+mkdir -p "${output_dir}"
+mkdir -p "${output_db}"
+
+#Download plasmidID database
+download_plasmid_database.py -o "${output_db}"
+plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+
+# Iterate over all subdirectories in the input directory
+for sample_dir in "${input_dir}"/*; do
+  if [ -d "${sample_dir}" ]; then
+    # Extract sample name from the subdirectory
+    sample=$(basename "${sample_dir}")
+
+    # Run PlasmidID
+    plasmidid_out="${output_dir}/${sample}/plasmidid_results.txt"
+    plasmidID -d "${plasmid_db_path}" -c "${sample_dir}/contigs.fasta" -o "${plasmidid_out}" --threads 16
+  fi
+done
+```
 11.Genome Assessment [input file contigs.fasta)
 
 I) Genome contiguity
