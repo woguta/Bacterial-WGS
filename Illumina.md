@@ -1736,14 +1736,40 @@ vep -i "${output_dir}/filtered_variants.vcf.gz" \
 echo "Joint Genotyping and annotation completed"
 echo "Done"
 ```
-iii) Comprehensive indexing of ref_genome, aligning reads, variants calling and annotation done at once using bwa, samtools and bcftools
+iii) a. Make snpEff database for P.aeruginosa PAO1
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J snpEff_db
+#SBATCH -n 16
+
+#Load modules
+module purge
+module load java/17
+
+# Exit with error debug
+set -e
+
+mkdir -p ./database/snpEff/data/PAO1/
+cp -r ./genome_ref/pseudomonas_aeruginosa_PAO1.gff ./database/snpEff/data/PAO1/genes.gff
+cp -r ./genome_ref/pseudomonas_aeruginosa_PAO1.fasta ./database/snpEff/data/PAO1/sequences.fa
+echo -e "# P. aeruginosa bacterial genome, version PseudomonasPAO1\nPAO1.genome: PAO1" > ./database/snpEff/data/PAO1/snpEff.config
+
+#Build the database
+java -Xmx4g -jar /export/apps/snpeff/5.1g/snpEff.jar build \
+        -config ./database/snpEff/data/PAO1/snpEff.config \
+        -dataDir ./../ \
+        -gff3 \
+        -v PAO1
+```
+iii) b. Comprehensive indexing of ref_genome, aligning reads, variants calling and annotation done at once using bwa, samtools, bcftools, snpeff &snsift
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J BwaBcf_VC
 #SBATCH -n 16
 
-#Exit immediately if a command exits with a non-zero status
+# Exit immediately if a command exits with a non-zero status
 set -e
 
 # Load necessary modules
@@ -1751,6 +1777,8 @@ module purge
 module load bwa/0.7.17
 module load samtools/1.15.1
 module load bcftools/1.15.1
+module load snpeff/5.1
+module load java/17
 
 # Specify the directory containing the trimmed fastq files
 input_dir="./results/fastp"
@@ -1758,9 +1786,9 @@ output_dir="./results/bwamem"
 output_dir2="./results/bcf_variants"
 
 # Define the path to the reference genome FASTA file
-reference_file="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta"
+reference_file="./genome_ref/pseudomonas_aeruginosa_PAO1.fasta"
 
-# Make output directory if not available
+# Make output directories if not available
 mkdir -p "${output_dir}"
 mkdir -p "${output_dir2}"
 
@@ -1804,29 +1832,87 @@ echo "Filtering variants..."
 for vcf_file in "${output_dir2}"/*.vcf; do
     sample_name=$(basename "${vcf_file}" .vcf)
     echo "Processing sample: ${sample_name}"
-    bcftools filter -t 16 -i 'QUAL > 20' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
+    bcftools filter --threads 16 -i 'DP>=10' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
 done
 
 # Step 5: Index the filtered VCF files
 echo "Indexing filtered VCF files..."
 for filtered_vcf in "${output_dir2}"/*.filtered.vcf; do
     echo "Indexing: ${filtered_vcf}"
-    bcftools index -t 10 "${filtered_vcf}"
+    bcftools index --threads 16 "${filtered_vcf}"
 done
 
 # Step 6: Variant Annotation with GFF file
-echo "Performing variant annotation..."
-gff_file="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.gff"
+# Define input files and directories
+vcf_dir="${output_dir2}"
+annotated_dir="./results/annotated_variants"
+reference_file="./genome_ref/pseudomonas_aeruginosa_PAO1.fasta"
+gff_file="./genome_ref/pseudomonas_aeruginosa_PAO1.gff"
+snpeff_jar="/export/apps/snpeff/5.1g/snpEff.jar"
 
 # Create output directory for annotated variants
-annotated_dir="./results/annotated_variants"
-mkdir -p "${annotated_dir}"
+mkdir -p "$annotated_dir"
 
-for vcf_file in "${output_dir2}"/*.filtered.vcf; do
+# Run SnpEff for variant annotation
+echo "Performing variant annotation..."
+for vcf_file in "$vcf_dir"/*.filtered.vcf; do
     sample_name=$(basename "${vcf_file}" .filtered.vcf)
-    echo "Processing sample: ${sample_name}"
-    bcftools annotate --annotations "${gff_file}" --columns INFO/ANN --threads 16 "${vcf_file}" > "${annotated_dir}/${sample_name}_annotated.vcf"
+    echo "Processing sample: $sample_name"
+    bcftools view --threads 16 "$vcf_file" |
+    java -Xmx4g -jar "$snpeff_jar" \
+           -config ./database/snpEff/data/PAO1/snpEff.config \
+	   -dataDir ./../ \
+	   -v PAO1 ${vcf_file} > "${annotated_dir}/${sample_name}.snpeff.vcf"
 done
 
-echo "Variant calling and annotation complete."
+echo "Variant annotation complete."
+
+# Step 7: Rename summary.html and genes.txt and zip vcf files
+mv ./snpEff_summary.html "${annotated_dir}/${sample_name}.snpeff.summary.html"
+mv ./snpEff_genes.txt "${annotated_dir}/${sample_name}.snpeff.genes.txt"
+
+# Compress vcf
+bgzip -c "${annotated_dir}/${sample_name}.snpeff.vcf" > "${annotated_dir}/${sample_name}.snpeff.vcf.gz"
+
+# Create tabix index - Samtools
+tabix -p vcf -f "${annotated_dir}/${sample_name}.snpeff.vcf.gz"
+
+# Generate VCF files
+bcftools stats "${annotated_dir}/${sample_name}.snpeff.vcf.gz" > "${annotated_dir}/${sample_name}.snpeff.stats.txt"
+
+echo "Variant summar renaming, compressing complete."
+
+# Step 8: Variant Extraction with SnpSift
+# Define input files and directories
+snpeff_dir="${output_dir2}"
+extracted_dir="./results/extracted_variants"
+
+# Create output directory for extracted variants
+mkdir -p "$extracted_dir"
+
+# Run SnpSift for variant extraction
+echo "Performing variant extraction..."
+for snpeff_file in "$snpeff_dir"/*.snpeff.vcf.gz; do
+    sample_name=$(basename "${snpeff_file}" .snpeff.vcf.gz)
+    echo "Processing sample: $sample_name"
+    bcftools view -t 16 "$snpeff_file" |
+    java -Xmx4g -jar "/export/apps/snpeff/5.1g/snpSift.jar" \
+        extractFields \
+        -s "," \
+        -e "." \
+        /dev/stdin \
+        "ANN[*].GENE" "ANN[*].GENEID" \
+        "ANN[*].IMPACT" "ANN[*].EFFECT" \
+        "ANN[*].FEATURE" "ANN[*].FEATUREID" \
+        "ANN[*].BIOTYPE" "ANN[*].RANK" "ANN[*].HGVS_C" \
+        "ANN[*].HGVS_P" "ANN[*].CDNA_POS" "ANN[*].CDNA_LEN" \
+        "ANN[*].CDS_POS" "ANN[*].CDS_LEN" "ANN[*].AA_POS" \
+        "ANN[*].AA_LEN" "ANN[*].DISTANCE" "EFF[*].EFFECT" \
+        "EFF[*].FUNCLASS" "EFF[*].CODON" "EFF[*].AA" "EFF[*].AA_LEN" \
+        "LOF[*].GENE" "LOF[*].GENEID" "LOF[*].NUMTR" "LOF[*].PERC" \
+        "NMD[*].GENE" "NMD[*].GENEID" "NMD[*].NUMTR" "NMD[*].PERC" \
+        > "${extracted_dir}/${sample_name}.snpsift.txt"
+done
+
+echo "Variant extraction complete."
 ```
