@@ -462,30 +462,45 @@ vii) Identify the plasmids/annotate
 module purge
 module load plasmidid/1.6.3
 
-#Define input and output directories
-input_dir="./results/plasmid_assembly"
-output_dir="./results/plasmidID"
-output_db="./plasmidplsdb"
+#Define input, output directories
+input_dir="./results/fastp"
+output_db="./plasmidIDdb"
 dateNow=`date +"%Y-%m-%d"`
 #dateNow="2023-06-21"
 
 # Make output directory
-mkdir -p "${output_dir}"
 mkdir -p "${output_db}"
 
-#Download plasmidID database
+#Download plasmidID database and define db path
 download_plasmid_database.py -o "${output_db}"
-plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+#plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
+plasmid_db_path="./plasmidIDdb/${dateNow}_plasmids.fasta"
 
-# Iterate over all subdirectories in the input directory
-for sample_dir in "${input_dir}"/*; do
-  if [ -d "${sample_dir}" ]; then
-    # Extract sample name from the subdirectory
-    sample=$(basename "${sample_dir}")
+echo "Running PlasmidID"
+for R1 in "${input_dir}"/*_L001.R1.trim.fastq.gz; do
+  if [ -f "${R1}" ]; then
+    # Extract the sample name
+    sample=$(basename "${R1}" _L001.R1.trim.fastq.gz)
+
+    #Define contigs path
+    contigs_fasta="./results/plasmid_assembly/${sample}/contigs.fasta"
 
     # Run PlasmidID
-    plasmidid_out="${output_dir}/${sample}/plasmidid_results.txt"
-    plasmidID -d "${plasmid_db_path}" -c "${sample_dir}/contigs.fasta" -o "${plasmidid_out}" --threads 16
+    echo "Running PlasmidID for sample ${sample}"
+    echo "Plasmid database path: ${plasmid_db_path}"
+    echo "contigs for each sample: ${contigs_fasta}"
+    plasmidID \
+      -1 "${R1}" \
+      -2 "${R1/_L001.R1.trim.fastq.gz/_L001.R2.trim.fastq.gz}" \
+      -d "${plasmid_db_path}" \
+      -c "${contigs_fasta}" \
+      --no-trim \
+      -g PSEUDO \
+      -s "${sample}" \
+      -T 16
+  else
+    echo -e "\tERROR!!! File not found: ${input_dir}/*_L001.R1.trim.fastq.gz"
+    exit
   fi
 done
 ```
