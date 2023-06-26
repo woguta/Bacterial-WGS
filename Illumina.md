@@ -31,9 +31,9 @@
         vi. DIvergence Time estimation
 12. Metadata - linking genotypic data with phenotypic traits, Plasmids, Mutations etc
 
-##NB
+## NB
 
-##To change directories and files timestamps
+## To change directories and files timestamps
 ```
 # Display the initial timestamps
 echo "Initial timestamps:"
