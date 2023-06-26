@@ -31,6 +31,23 @@
         vi. DIvergence Time estimation
 12. Metadata - linking genotypic data with phenotypic traits, Plasmids, Mutations etc
 
+##NB
+##To change directories and files timestamps
+```
+# Display the initial timestamps
+echo "Initial timestamps:"
+ls -lR
+
+# Touch all directories
+find . -type d -exec touch {} +
+
+# Touch all files
+find . -type f -exec touch {} +
+
+# Display the updated timestamps
+echo "Updated timestamps:"
+ls -lR
+```
 # Steps
 1. Log into hpc via ssh & interactive computing
 ```
