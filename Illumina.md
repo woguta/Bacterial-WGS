@@ -471,27 +471,48 @@ dateNow=`date +"%Y-%m-%d"`
 # Make output directory
 mkdir -p "${output_db}"
 
+echo "Downloading PlasmidIDdb"
+
 #Download plasmidID database and define db path
 download_plasmid_database.py -o "${output_db}"
 #plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
 plasmid_db_path="./plasmidIDdb/${dateNow}_plasmids.fasta"
 
 echo "Running PlasmidID"
-for R1 in "${input_dir}"/*_L001.R1.trim.fastq.gz; do
+
+for R1 in "${input_dir}"/*.R1.trim.fastq.gz; do
   if [ -f "${R1}" ]; then
     # Extract the sample name
-    sample=$(basename "${R1}" _L001.R1.trim.fastq.gz)
+    sample=$(basename "${R1}" .R1.trim.fastq.gz)
 
-    #Define contigs path
-    contigs_fasta="./results/plasmid_assembly/${sample}/contigs.fasta"
+    # Define R2 file path
+    R2="${input_dir}/${sample}.R2.trim.fastq.gz"
+
+    # Define the contigs path
+    contigs_dir="./results/plasmid_assembly/${sample}"
+    contigs_fasta="${contigs_dir}/contigs.fasta"
+
+    # Check if contigs directory exists
+    if [ ! -d "${contigs_dir}" ]; then
+      echo "ERROR: Contigs directory does not exist for sample ${sample}. Skipping sample ${sample}."
+      continue
+    fi
+
+    # Check if contigs.fasta is readable and non-empty
+    if [ ! -r "${contigs_fasta}" ] || [ ! -s "${contigs_fasta}" ]; then
+      echo "ERROR: '${contigs_fasta}' is not a readable non-empty FASTA file for sample ${sample}. Skipping sample ${sample}."
+      continue
+    fi
+
+    # Display contigs file path
+    echo "Contigs for ${sample}: ${contigs_fasta}"
 
     # Run PlasmidID
     echo "Running PlasmidID for sample ${sample}"
     echo "Plasmid database path: ${plasmid_db_path}"
-    echo "contigs for each sample: ${contigs_fasta}"
     plasmidID \
       -1 "${R1}" \
-      -2 "${R1/_L001.R1.trim.fastq.gz/_L001.R2.trim.fastq.gz}" \
+      -2 "${R2}" \
       -d "${plasmid_db_path}" \
       -c "${contigs_fasta}" \
       --no-trim \
@@ -499,7 +520,7 @@ for R1 in "${input_dir}"/*_L001.R1.trim.fastq.gz; do
       -s "${sample}" \
       -T 16
   else
-    echo -e "\tERROR!!! File not found: ${input_dir}/*_L001.R1.trim.fastq.gz"
+    echo -e "\tERROR!!! File not found: ${input_dir}/*R1.trim.fastq.gz"
     exit
   fi
 done
