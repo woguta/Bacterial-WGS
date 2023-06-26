@@ -1914,5 +1914,66 @@ for snpeff_file in "$snpeff_dir"/*.snpeff.vcf.gz; do
         > "${extracted_dir}/${sample_name}.snpsift.txt"
 done
 
+iv) Extracting the annotated_variants from snpsift.txt
+
+```
+#!usr/bin/bashrc -l
+
+#load neccessary modules
+module purge
+module load R/4.3
+
+#open r console/studio in the terminal
+R
+
+# Set the input directory where the sample directories are located
+input_dir <- "./extracted_variants"
+
+# Get a list of all sample directories in the input directory
+sample_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# create a vector of available for rgi results
+annotated_data_type <- c("txt")
+
+for annotated_data_type {
+
+# Create an empty data frame to store the aggregated data
+agg_df <- data.frame()
+
+# Loop over each sample directory
+for (sample_dir in sample_dirs) {
+  # Get a list of all annotated result files in the current sample directory
+  file_list <- list.files(path = sample_dir, pattern = paste0("snpsift.txt"), full.names = TRUE)
+
+  # Loop over each annotated result file
+  for (file in file_list) {
+    # Read the annotated data from the file
+    annotated_data <- read.delim(file, sep = "\t")
+	
+	# skip sample if no annotated data was found
+	if (nrow(annotated_data) == 0) {
+	next
+	}
+
+    # Extract the sample name from the file path
+    sample_name <- tools::file_path_sans_ext(basename(sample_dir))
+
+    # Add the sample name as a column in the data frame
+    annoatated_data$sample_name <- sample_name
+
+    # Append the data to the aggregated data frame
+    agg_df <- rbind(agg_df, annotated_data)
+  }
+}
+
+# Set the output file name
+output_file <- paste0("combined_annotated_data.csv")
+
+# Write the aggregated data to a CSV file
+write.csv(agg_df, file = output_file, row.names = FALSE)
+}
+done
+```
+
 echo "Variant extraction complete."
 ```
