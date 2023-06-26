@@ -32,6 +32,7 @@
 12. Metadata - linking genotypic data with phenotypic traits, Plasmids, Mutations etc
 
 ##NB
+
 ##To change directories and files timestamps
 ```
 # Display the initial timestamps
