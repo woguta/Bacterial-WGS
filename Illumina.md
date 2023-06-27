@@ -2022,6 +2022,7 @@ for snpeff_file in "$snpeff_dir"/*.snpeff.vcf.gz; do
         "NMD[*].GENE" "NMD[*].GENEID" "NMD[*].NUMTR" "NMD[*].PERC" \
         > "${extracted_dir}/${sample_name}.snpsift.txt"
 done
+```
 
 iv) Extracting the annotated_variants from snpsift.txt
 
@@ -2082,7 +2083,6 @@ output_file <- paste0("combined_annotated_data.csv")
 write.csv(agg_df, file = output_file, row.names = FALSE)
 }
 done
-```
 
 echo "Variant extraction complete."
 ```
