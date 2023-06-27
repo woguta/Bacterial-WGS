@@ -33,7 +33,7 @@
 
 ## NB
 
-## To change directories and files timestamps
+To change directories and files timestamps
 ```
 # Display the initial timestamps
 echo "Initial timestamps:"
@@ -49,11 +49,11 @@ find . -type f -exec touch {} +
 echo "Updated timestamps:"
 ls -lR
 ```
-## To rename files
+To rename files
 
-## Renaming files by putting underscore
+Renaming files by putting underscore from AS-26335-C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1_S89_L001.R1.trim.fastq.gz
 ```
-#Renaming files by putting underscore from AS-26335-C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1_S89_L001.R1.trim.fastq.gz
+#Renaming files by putting underscore 
 for file in *.trim.fastq.gz; do
     newname="${file//-/_}"
     mv "$file" "$newname"
@@ -71,7 +71,7 @@ for file in *.R2.trim.fastq.gz; do
     mv "$file" "$newname"
 done
 ```
-## Renaming by removing unwanted titles from to AS_26335_C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1.R1.trim.fastq.gz
+Renaming by removing unwanted titles from to AS_26335_C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1.R1.trim.fastq.gz
 
 ```
 for file in *.fastq.gz; do
