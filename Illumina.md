@@ -49,6 +49,28 @@ find . -type f -exec touch {} +
 echo "Updated timestamps:"
 ls -lR
 ```
+## To rename files
+
+```
+#Renaming files 
+for file in *.trim.fastq.gz; do
+    newname="${file//-/_}"
+    mv "$file" "$newname"
+done
+
+#Confirm for R1
+for file in *.R1.trim.fastq.gz; do
+    newname="${file//-/_}"
+    mv "$file" "$newname"
+done
+
+#Confirm for R2
+for file in *.R2.trim.fastq.gz; do
+    newname="${file//-/_}"
+    mv "$file" "$newname"
+done
+```
+
 # Steps
 1. Log into hpc via ssh & interactive computing
 ```
