@@ -71,7 +71,7 @@ for file in *.R2.trim.fastq.gz; do
     mv "$file" "$newname"
 done
 ```
-Renaming by removing unwanted titles from to AS_26335_C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1.R1.trim.fastq.gz
+Renaming by removing unwanted titles from AS_26335_C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1.R1.trim.fastq.gz
 
 ```
 for file in *.fastq.gz; do
@@ -126,7 +126,7 @@ gunzip *.gz
 ```
 View the files as in 3 above
 
-6 Load modules. Some modules clash with others, this is just a list. Load the latest version as per your hpc software list. Use module avail to check the latest version
+6 Load modules: Some modules clash with others, this is just a list. Load the latest version as per your hpc software/module lists.
 ```
 module load fastqc/0.11.9
 module load fastp/0.22.0
@@ -141,11 +141,11 @@ module load bowtie2/2.5.0
 module load bedtools/2.29.0
 module load bamtools/2.5.1
 module load ivar/1.3.1
-module load snpeff/4.1g
+module load snpeff/5.1
 module load bcftools/1.13
 module load nextclade/2.11.0
 module load R/4.2
-module load prokka/1.11
+module load prokka/1.14.6
 module load blast/2.12.0+
 ```
 7. Run fastqc on one sample
@@ -260,7 +260,7 @@ do
           --json ${OUTPUT_DIR}/${NAME}.fastp.json \
           --html ${OUTPUT_DIR}/${NAME}.fastp.html \
           --failed_out ${OUTPUT_DIR}/${NAME}.failed.fastq.gz \
-          --thread 4 \
+          --thread 16 \
           -5 -3 -r \
           --detect_adapter_for_pe \
           --qualified_quality_phred 20 \
@@ -279,7 +279,7 @@ iii) Second pathway sbatch - sunmitiing jobs to the cluster as you do other thin
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J fastp
-#SBATCH -n 4
+#SBATCH -n 16
 
 #module purge
 module purge
@@ -305,7 +305,7 @@ do
           --json ${OUTPUT_DIR}/${NAME}.fastp.json \
           --html ${OUTPUT_DIR}/${NAME}.fastp.html \
           --failed_out ${OUTPUT_DIR}/${NAME}.failed.fastq.gz \
-          --thread 4 \
+          --thread 16 \
           -5 -3 -r \
           --detect_adapter_for_pe \
           --qualified_quality_phred 20 \
@@ -341,7 +341,7 @@ Do fastqc for all the trimmed files
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J fastqc
-#SBATCH -n 4
+#SBATCH -n 16
 
 # load modules
 module load fastqc/0.11.9
@@ -360,7 +360,7 @@ for file in $INPUT_DIR/*.trim.fastq.gz; do
     filename=$(basename "$file" .trim.fastq.gz)
 
     # run fastqc on the file and save the output to the output directory
-    fastqc -t 4 -o $OUTPUT_DIR $file
+    fastqc -t 16 -o $OUTPUT_DIR $file
 
 done
 ```
@@ -391,7 +391,7 @@ For all samples via loop
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J SPAdes
-#SBATCH -n 4
+#SBATCH -n 16
 
 # module purge
 module purge
@@ -427,7 +427,7 @@ do
             -1 ${INPUT_DIR}/${SAMPLE}.R1.trim.fastq.gz \
             -2 ${INPUT_DIR}/${SAMPLE}.R2.trim.fastq.gz \
             -o ${OUTPUT_DIR}/${SAMPLE} \
-            -t 4 \
+            -t 16 \
             -m 100 \
             |& tee ${OUTPUT_DIR}/${SAMPLE}.spades.log || echo "${SAMPLE} failed"
 done
@@ -456,7 +456,7 @@ iv) For plasmid assembly
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J PlasmidSPAdes
-#SBATCH -n 8
+#SBATCH -n 16
 
 # module purge
 module purge
@@ -492,14 +492,14 @@ for file in ${input_dir}/*.R1.trim.fastq.gz; do
             -1 ${input_dir}/${sample}.R1.trim.fastq.gz \
             -2 ${input_dir}/${sample}.R2.trim.fastq.gz \
             -o ${output_dir}/${sample} \
-            -t 8 \
+            -t 16 \
             -m 100 \
             --debug
 done
 ```
 vii) Identify the plasmids/annotate
 
-a) When gff file not available
+a) When gff file and plasmid contigs not available
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -587,7 +587,7 @@ for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
 done
 ```
 
-b) When plasmid contigs.fasta are available, provide path to gff file
+b) When plasmid contigs.fasta from spades-plasmid & gff file from prokka are available, provide path to gff file
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -666,7 +666,7 @@ for R1 in "${input_dir}"/*.R1.trim.fastq.gz; do
 done
 ```
 
-c) When doing plasmid contigs.fasta assembly, provide path to gff file
+c) When doing plasmid contigs.fasta assembly but gff file is available, provide path to gff file
 
 ```
 #!/usr/bin/bash -l
@@ -803,7 +803,7 @@ quast.py "$file" -t 4 -o "$output_path": This runs the quast.py command on the c
 
  II) Genome completeness
  
-Assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. they're lacking or less then the genome is not complete.
+Assesses the presence or absence of highly conserved genes (orthologs) in an assembly/ ensures that all regions of the genome have been sequenced and assembled. It's performed using BUSCO (Benchmarking Universal Single-Copy Orthologs). Ideally, the sequenced genome should contain most of these highly conserved genes. If they're lacking or less then the genome is not complete.
 
 I) For one sample 
 
@@ -847,7 +847,7 @@ b) Loop for all files?
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J BUSCO
-#SBATCH -n 4
+#SBATCH -n 16
 
 # Load modules
 module load busco/5.2.2
@@ -871,7 +871,7 @@ do
     -m genome \
     -o ${OUTPUT_DIR}/${SAMPLE}_busco \
     -l bacteria \
-    -c 4 \
+    -c 16 \
     -f \
     |& tee ${OUTPUT_DIR}/${SAMPLE}_busco.log || echo "${SAMPLE} failed"
 done
@@ -891,15 +891,15 @@ First, unload the modules to avoid conflict between the loaded dependencies
 module purge
 ```
 ```
-module load prokka/1.11
+module load prokka/1.14.6
 ```
 ```
 cd ./results/prokka
 ```
 i) Run for one sample
 ```
-prokka ./results/spades/contigs.fasta \
---outdir ./results/prokka \
+prokka ./results/spades/${sample}/contigs.fasta \
+--outdir ./results/prokka/${sample} \
 --cpus 4 \
 --mincontiglen 200 \
 --centre C \
@@ -994,7 +994,7 @@ ii) Loop
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J blastn
-#SBATCH -n 4
+#SBATCH -n 16
 
 #module purge to avoid clashing
 module purge
@@ -1028,7 +1028,7 @@ for file in "${input_dir}"/contigs.fasta; do
         -db "${db_path}" \
         -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
         -culling_limit 5 \
-        -num_threads 4 \
+        -num_threads 16 \
         -evalue 1e-25 \
         -out "${output_dir}/${filename}.vs.nt.cul5.1e25.megablast.out"
 done
@@ -1042,7 +1042,7 @@ iii) Doing all the *.contigs.fasta & *.scaffold.fasta
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J blastn
-#SBATCH -n 4
+#SBATCH -n 16
 
 #module purge to avoid clashing
 module purge
@@ -1076,7 +1076,7 @@ for sample_dir in "${input_dir}"/*/; do
            -db "${db_path}" \
            -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
            -culling_limit 5 \
-           -num_threads 4 \
+           -num_threads 16 \
            -evalue 1e-25 \
            -out "${output_dir}/${sample}/scaffolds.vs.nt.cul5.1e25.megablast.out"
     
@@ -1086,7 +1086,7 @@ for sample_dir in "${input_dir}"/*/; do
            -db "${db_path}" \
            -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
            -culling_limit 5 \
-           -num_threads 4 \
+           -num_threads 16 \
            -evalue 1e-25 \
            -out "${output_dir}/${sample}/contigs.vs.nt.cul5.1e25.megablast.out"
 done
@@ -1114,7 +1114,7 @@ iv) Extracting blast data
 ```
 #load neccessary modules
 module purge
-module load R/4.2
+module load R/4.3
 
 #open r console/studio in the terminal
 R
@@ -1216,7 +1216,7 @@ ii) Loop for all samples
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J RGI
-#SBATCH -n 4
+#SBATCH -n 16
 
 #module purge to avoid conflicts
 module purge
@@ -1251,16 +1251,10 @@ for sample_dir in "${input_dir}"/*/; do
         -a BLAST \
         -g PRODIGAL \
         --low_quality \
-        --num_threads 4 \
+        --num_threads 16 \
         --split_prodigal_jobs \
 	--clean \
-	--debug        
-
-    # Generate heatmap for AMR genes for contigs
-    rgi heatmap \
-        --input "${output_dir}/${sample}/contigs.rgi.tsv" \
-        --output "${output_dir}/${sample}_heatmap.png" \
-        --debug
+	--debug
 done
 ```
 This  script performs RGI (Resistance Gene Identifier) analysis on contigs and scaffolds generated from genome assembly for multiple samples. The script first purges modules and then loads the necessary module RGI, and sets up the RGI database by creating a symbolic link to the CARD (Comprehensive Antibiotic Resistance Database) localDB.
@@ -1275,7 +1269,7 @@ iii) Run abricate amr genes analysis for all samples
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J abricate
-#SBATCH -n 4
+#SBATCH -n 16
 
 #module purge to avoid clashing
 module purge
@@ -1323,7 +1317,7 @@ for sample_dir in "${input_dir}"/*/; do
 done
 ```
 
-##Extracting AMR data
+## Extracting AMR data
 
 i) From RGI results
 ```
@@ -1331,7 +1325,7 @@ i) From RGI results
 
 #load neccessary modules
 module purge
-module load R/4.2
+module load R/4.3
 
 #open r console/studio in the terminal
 R
@@ -1392,13 +1386,10 @@ ABRicate
 
 #load neccessary modules
 module purge
-module load R/4.2
+module load R/4.3
 
 #open R console/studio in the terminal
 R
-
-#Path to the Rscript
-#export PATH=".:$PATH"
 
 # Set the input directory where the sample directories are located
 input_dir <- "./results/abricate"
@@ -1451,7 +1442,8 @@ write.csv(agg_df, file = output_file, row.names = FALSE)
 done
 ```
 
-##Transforming/extracting AMR counts per sample
+## Transforming/extracting AMR counts per sample in R
+
 ```
 #load required libraries
 library(tidyverse)
@@ -1485,17 +1477,17 @@ The ability of a bacterium to colonise a host and contribute to its pathogenecit
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J blast_vf
-#SBATCH -n 4
+#SBATCH -n 16
 
 #module purge
 module purge
 
 # Load modules
-module load blast/2.11.0
+module load blast/2.12.0+
 
 # Define input and output directories
 INPUT_DIR=./results/spades
-OUTPUT_DIR=./results/blast
+OUTPUT_DIR=./results/VFDB
 
 # Create output directory if it does not exist
 mkdir -p "${OUTPUT_DIR}"
@@ -1506,7 +1498,7 @@ blastn \
     -db /var/scratch/global/bacteria-wgs/databases/VFDB/vfdb_seta_nt \
     -out ${OUTPUT_DIR}/virulence_factors_blast_VFDB.out \
     -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
-    -num_threads 4
+    -num_threads 16
 ```
 -query: specifies the input query file in fasta format.
 -db: specifies the path to the VFDB blast database to be used for the search.
@@ -1519,17 +1511,17 @@ Loop for all files
 #!/usr/bin/bash -l
 #SBATCH -p batch
 #SBATCH -J blast_vf
-#SBATCH -n 4
+#SBATCH -n 16
 
 #module purge
 module purge
 
 # Load modules
-module load blast/2.11.0
+module load blast/2.12.0+
 
 # Define input and output directories
 INPUT_DIR=./results/spades
-OUTPUT_DIR=./results/blast
+OUTPUT_DIR=./results/VFDB
 
 # Create output directory if it does not exist
 mkdir -p "${OUTPUT_DIR}"
@@ -1546,7 +1538,7 @@ do
     -db /var/scratch/${USER}/bacteria-wgs/databases/VFDB/vfdb_seta_nt \
     -out ${OUTPUT_DIR}/${SAMPLE_NAME}_virulence_factors_blast_VFDB.out \
     -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle' \
-    -num_threads 4
+    -num_threads 16
 done
 ```
 This loop uses a wildcard (*) to match all files with a .fasta extension in the INPUT_DIR. The loop then extracts the sample name from the file name (assuming that the file name ends with .fasta) and uses it to name the output file in the OUTPUT_DIR. The loop then runs the same blastn command for each sample, outputting the results to a separate file for each sample.
@@ -1797,176 +1789,7 @@ for (coverage_file in coverage_files) {
 ```
 14. Variants callings
 
-i) Using Ivar and Samtools mpileup
-
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J ivar_variants_calling
-#SBATCH -n 5
-
-#load necessary modules
-module purge
-module load samtools/1.15.1
-module load ivar/1.3.1
-
-# Specify the directory containing the sorted BAM files
-input_dir="./results/bowtie/sorted_indexed"
-output_dir="./results/ivar_variants"
-
-# Make output directory if not available
-mkdir -p "${output_dir}"
-
-# Iterate over each sorted BAM file in the directory
-for bam_file in "$input_dir"/*.sorted.bam; do
-    # Extract the file name without the extension
-    filename=$(basename "$bam_file" .sorted.bam)
-
-    # Run samtools mpileup and ivar variants for each BAM file
-    samtools mpileup \
-        --ignore-overlaps \
-        --count-orphans \
-        --no-BAQ \
-        --max-depth 0 \
-        --min-BQ 0 \
-        --reference ./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta \
-        "$bam_file" \
-        | ivar variants \
-            -t 0.25 \
-            -q 20 \
-            -m 10 \
-            -g ./genome_ref/pseudomonas_aeruginosa_pao1_substrain.gff \
-            -r ./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta \
-            -p "${output_dir}/${filename}.variants"
-
-    echo "Processed ${bam_file}"
-done
-```
-ii) Comprehensive variant calling using GATK and Vep
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J GATKVep_VC
-#SBATCH -n 10
-
-# Load necessary modules
-module purge
-module load samtools/1.15.1
-module load java/17
-module load picard/2.27.5
-module load gatk/4.4.0.0
-module load vep/109.3
-
-# Specify the directory containing the sorted BAM files
-input_dir="./results/bowtie/sorted_indexed"
-output_dir="./results/gatkvep_variants"
-
-# Make output directory if not available
-mkdir -p "${output_dir}"
-
-# Specify the path to the reference genome and GFF files
-reference="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.fasta"
-gff="./genome_ref/pseudomonas_aeruginosa_pao1_substrain_genome.gff"
-
-# Create the sequence dictionary file for the reference genome
-gatk CreateSequenceDictionary -R "$reference" -O "${reference%.*}.dict"
-
-# Specify the path to the sequence dictionary file
-dict_file="${reference%.*}.dict"
-
-# Create an empty sample map file
-sample_map_file="${output_dir}/sample_map.txt"
-> "$sample_map_file"
-
-# Iterate over each sorted BAM file in the input directory
-for bam_file in "$input_dir"/*.fastq.sorted.bam; do
-    # Extract the file name without extension
-    sample_name=$(basename "$bam_file" .sorted.bam)
-
-    # Get the desired sample name based on the filename
-    desired_sample_name="${sample_name}"
-
-    # Update the desired sample name in the BAM file
-    samtools view -H "$bam_file" | sed -e "s/SM:${sample_name}/SM:${desired_sample_name}/" | samtools view -bS - > "${output_dir}/${desired_sample_name}.sorted.bam"
- 
-   # Check if the BAM file was successfully updated
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to update sample name in BAM file: ${bam_file}"
-        exit 1
-    fi
-
-    #Index the sorted BAM file
-    samtools index -@4 "${output_dir}/${desired_sample_name}.sorted.bam"
-
-    echo "Sample Name: ${desired_sample_name}.sorted.bam"
-    echo "Indexed Sample Name: ${output_dir}/${desired_sample_name}.bam.fai"
-
-    # Add the desired sample name to the sample map file
-    echo "${desired_sample_name} ${output_dir}/${desired_sample_name}.sorted.bam" >> "$sample_map_file"
-    echo "${desired_sample_name} ${output_dir}/${desired_sample_name}.sorted.bam.fai" >> "$sample_map_file"
-
-    # Define input files
-    input_file="${output_dir}/${desired_sample_name}.sorted.bam"
-
-    # Define output file
-    output_file="${output_dir}/${desired_sample_name}.vcf.gz"
-
-     echo $reference
-     echo $input_file
-     echo $output_file
-     echo $dict_file
-
-    # Step 1: Variant Calling using GATK HaplotypeCaller
-    gatk --java-options "-Xmx4g" HaplotypeCaller \
-        -R "$reference" \
-        -I "$input_file" \
-        -O "$output_file" \
-        --sequence-dictionary "$dict_file"
-
-    echo "Variant Calling completed for ${desired_sample_name}"
-done
-
-# Step 2: Joint Genotyping using GATK GenomicsDBImport and GenotypeGVCFs
-gatk --java-options "-Xmx4g" GenomicsDBImport \
-    --genomicsdb-workspace-path "${output_dir}/genomicsdb" \
-    --sample-name-map "$sample_map_file"
-
-gatk --java-options "-Xmx4g" GenotypeGVCFs \
-    -R "$reference" \
-    -V gendb://"${output_dir}/genomicsdb" \
-    -O "${output_dir}/joint_genotyped.vcf.gz"
-
-# Step 3: Variant Filtering using GATK VariantFiltration
-gatk --java-options "-Xmx4g" VariantFiltration \
-    -R "$reference" \
-    -V "${output_dir}/joint_genotyped.vcf.gz" \
-    --filter-expression "QUAL < 30.0 || QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0" \
-    --filter-name "PASS_FILTER" \
-    -O "${output_dir}/filtered_variants.vcf.gz"
-
-# Step 4: Variant Annotation using VEP (Variant Effect Predictor)
-vep -i "${output_dir}/filtered_variants.vcf.gz" \
-    -o "${output_dir}/annotated_variants.vcf" \
-    --fasta "$reference" \
-    --cache \
-    --dir_cache /export/apps/vep/109.3/cache \
-    --species "Pseudomonas aeruginosa" \
-    --force_overwrite \
-    --merged \
-    --no_stats \
-    --no_intergenic \
-    --flag_pick_allele_gene \
-    --symbol \
-    --canonical \
-    --biotype \
-    --pubmed \
-    --vcf_info_field "ANN" \
-    --gff "$gff"
-
-echo "Joint Genotyping and annotation completed"
-echo "Done"
-```
-iii) a. Make snpEff database for P.aeruginosa PAO1
+a) Make snpEff database for P.aeruginosa PAO1
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -1992,7 +1815,7 @@ java -Xmx4g -jar /export/apps/snpeff/5.1g/snpEff.jar build \
         -gff3 \
         -v PAO1
 ```
-iii) b. Comprehensive indexing of ref_genome, aligning reads, variants calling and annotation done at once using bwa, samtools, bcftools, snpeff &snsift
+b) Comprehensive indexing of ref_genome, aligning reads, variants calling and annotation done at once using bwa, samtools, bcftools, snpeff &snsift
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -2145,7 +1968,7 @@ for snpeff_file in "$snpeff_dir"/*.snpeff.vcf.gz; do
 done
 ```
 
-iv) Extracting the annotated_variants from snpsift.txt
+iv) Extracting the annotated_variants from snpsift.txt using R
 
 ```
 #!usr/bin/bashrc -l
