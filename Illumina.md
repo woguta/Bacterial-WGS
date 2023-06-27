@@ -545,7 +545,7 @@ for sample_dir in "${spades_dir}"/*; do
                 --force \
                 --debug
         else
-            echo "ERROR!!! Contigs file not found for sample: ${sample}"
+            echo "ERROR!!! contigs_fasta not found for sample: ${sample}"
         fi
     fi
 done
@@ -581,7 +581,7 @@ for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
       --no-trim \
       -T 16
   else
-    echo -e "\tERROR!!! File not found: ${fastp_dir}/*R1.trim.fastq.gz"
+    echo -e "\tERROR!!! File not found: ${fastp_dir}/*.R1.trim.fastq.gz"
     exit
   fi
 done
