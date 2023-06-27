@@ -126,7 +126,7 @@ gunzip *.gz
 ```
 View the files as in 3 above
 
-6 Load modules, cd database
+6 Load modules. Some modules clash with others, this is just a list. Load the latest version as per your hpc software list. Use module avail to check the latest version
 ```
 module load fastqc/0.11.9
 module load fastp/0.22.0
