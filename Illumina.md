@@ -467,6 +467,8 @@ for file in ${input_dir}/*.R1.trim.fastq.gz; do
 done
 ```
 vii) Identify the plasmids/annotate
+
+When plasmid contigs.fasta are available:
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -543,6 +545,59 @@ for R1 in "${input_dir}"/*.R1.trim.fastq.gz; do
   fi
 done
 ```
+
+When doing plasmid contigs.fasta assembly (Recommended!)
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J plasmidID
+#SBATCH -n 16
+
+# Exit with error reporting
+set -e
+
+# Load modules
+module purge
+module load plasmidid/1.6.3
+
+# Define/make directories and database path
+input_dir="./results/fastp"
+plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
+
+echo "Running PlasmidID"
+
+for R1 in "${input_dir}"/*.R1.trim.fastq.gz; do
+  if [ -f "${R1}" ]; then
+    # Extract the sample name
+    sample=$(basename "${R1}" .R1.trim.fastq.gz)
+
+    # Define R2 file path
+    R2="${input_dir}/${sample}.R2.trim.fastq.gz"
+
+    # Create the output directory for plasmid assembly
+    assembly_output_dir="${output_dir}/${sample}"
+    mkdir -p "${assembly_output_dir}"
+
+    # Run PlasmidID for plasmid assembly
+    echo "Running PlasmidID for sample ${sample}"
+    echo "Plasmid database path: ${plasmid_db_path}"
+    echo "Output directory for plasmid assembly: ${assembly_output_dir}"
+    plasmidID \
+      -1 "${R1}" \
+      -2 "${R2}" \
+      -d "${plasmid_db_path}" \
+      -s "${sample}" \
+      -g PSEUDO \
+      --no-trim \
+      -T 16
+  else
+    echo -e "\tERROR!!! File not found: ${input_dir}/*R1.trim.fastq.gz"
+    exit
+  fi
+done
+```
+
 11.Genome Assessment [input file contigs.fasta)
 
 I) Genome contiguity
