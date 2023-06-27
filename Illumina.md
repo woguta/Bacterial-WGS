@@ -50,9 +50,9 @@ echo "Updated timestamps:"
 ls -lR
 ```
 ## To rename files
-
+## Renaming files by putting underscore
 ```
-#Renaming files 
+#Renaming files by putting underscore from AS-26335-C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1_S89_L001.R1.trim.fastq.gz
 for file in *.trim.fastq.gz; do
     newname="${file//-/_}"
     mv "$file" "$newname"
@@ -67,6 +67,13 @@ done
 #Confirm for R2
 for file in *.R2.trim.fastq.gz; do
     newname="${file//-/_}"
+    mv "$file" "$newname"
+done
+```
+## Renaming by removing unwanted titles from to AS_26335_C1_S89_L001.R1.trim.fastq.gz to AS_26335_C1.R1.trim.fastq.gz
+```
+for file in *.fastq.gz; do
+    newname=$(echo "$file" | sed 's/_S[0-9]*_L[0-9]*\.R/.R/')
     mv "$file" "$newname"
 done
 ```
