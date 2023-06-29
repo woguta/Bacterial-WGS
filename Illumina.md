@@ -512,9 +512,19 @@ set -e
 module purge
 module load plasmidid/1.6.5
 
-# Define directories and database path
+# Define directories and date now
 fastp_dir="./results/fastp"
-plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
+output_db="./plasmidIDdb"
+dateNow=$(date +"%Y-%m-%d")
+#dateNow="2023-06-21"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_db}"
+
+#Download plasmidID database and set database path
+download_plasmid_database.py -o "${output_db}"
+plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+#plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
 
 echo "Running PlasmidID"
 # Iterate over all the samples
