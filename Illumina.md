@@ -499,175 +499,6 @@ done
 ```
 vii) Identify the plasmids/annotate
 
-a) When gff file and plasmid contigs not available
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J Prokka_plasmidID
-#SBATCH -n 16
-
-# Exit with error reporting
-set -e
-
-# Load modules
-module purge
-module load plasmidid/1.6.5
-
-# Define directories
-spades_dir="./results/spades"
-prokka_dir="./results/prokka"
-
-# Make the output directory if it doesn't exist
-mkdir -p "${prokka_dir}"
-
-echo "Running Prokka"
-# Loop through all contigs.fasta files in the input directory
-for sample_dir in "${spades_dir}"/*; do
-    if [ -d "$sample_dir" ]; then
-        sample=$(basename "$sample_dir")
-        contigs_file="${sample_dir}/contigs.fasta"
-                
-        if [ -f "$contigs_file" ]; then
-            output_path="${prokka_dir}/${sample}"
-
-            # Echo contigs file path for the current sample
-            echo "contigs_fasta for ${sample}: ${contigs_file}"
-            
-            # Run the Prokka command on the current file
-            echo "Processing Prokka for sample: ${sample}"
-            prokka "$contigs_file" \
-                --outdir "$output_path" \
-                --cpus 16 \
-                --mincontiglen 200 \
-                --centre C \
-                --locustag L \
-                --compliant \
-                --force \
-                --debug
-        else
-            echo "ERROR!!! contigs_fasta not found for sample: ${sample}"
-        fi
-    fi
-done
-
-echo "Running PlasmidID"
-# Define directories and database path
-fastp_dir="./results/fastp"
-plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
-
-# Iterate over all the samples
-for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
-  if [ -f "${R1}" ]; then
-    # Extract the sample name
-    sample=$(basename "${R1}" .R1.trim.fastq.gz)
-
-    # Define R2 file path
-    R2="${fastp_dir}/${sample}.R2.trim.fastq.gz"
-
-    # Define gff file path for this sample
-    gff_file="${prokka_dir}/${sample}/*.gff"
-
-    # Run PlasmidID for plasmid assembly
-    echo "Running PlasmidID for sample ${sample}"
-    echo "Plasmid database path: ${plasmid_db_path}"
-    echo "gff file ${sample}: ${gff_file}"
-    plasmidID \
-      -1 "${R1}" \
-      -2 "${R2}" \
-      -d "${plasmid_db_path}" \
-      -a "${gff_file}" \
-      -s "${sample}" \
-      -g PSEUDO \
-      --no-trim \
-      -T 16
-  else
-    echo -e "\tERROR!!! File not found: ${fastp_dir}/*.R1.trim.fastq.gz"
-    exit
-  fi
-done
-```
-
-b) When plasmid contigs.fasta from spades-plasmid & gff file from prokka are available, provide path to gff file
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J PlasmidID
-#SBATCH -n 16
-
-# Enable debugging and abort on error
- set -e
-
-# Load modules
-module purge
-module load plasmidid/1.6.5
-
-#Define input, output directories
-input_dir="./results/fastp"
-output_db="./plasmidIDdb"
-dateNow=`date +"%Y-%m-%d"`
-#dateNow="2023-06-21"
-
-# Make output directory
-mkdir -p "${output_db}"
-
-echo "Downloading PlasmidIDdb"
-
-#Download plasmidID database and define db path
-download_plasmid_database.py -o "${output_db}"
-#plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
-plasmid_db_path="./plasmidIDdb/${dateNow}_plasmids.fasta"
-
-echo "Running PlasmidID"
-
-for R1 in "${input_dir}"/*.R1.trim.fastq.gz; do
-  if [ -f "${R1}" ]; then
-    # Extract the sample name
-    sample=$(basename "${R1}" .R1.trim.fastq.gz)
-
-    # Define R2 file path
-    R2="${input_dir}/${sample}.R2.trim.fastq.gz"
-
-    # Define the contigs path
-    contigs_dir="./results/plasmid_assembly/${sample}"
-    contigs_fasta="${contigs_dir}/contigs.fasta"
-
-    # Check if contigs directory exists
-    if [ ! -d "${contigs_dir}" ]; then
-      echo "ERROR: Contigs directory does not exist for sample ${sample}. Skipping sample ${sample}."
-      continue
-    fi
-
-    # Check if contigs.fasta is readable and non-empty
-    if [ ! -r "${contigs_fasta}" ] || [ ! -s "${contigs_fasta}" ]; then
-      echo "ERROR: '${contigs_fasta}' is not a readable non-empty FASTA file for sample ${sample}. Skipping sample ${sample}."
-      continue
-    fi
-
-    # Display contigs file path
-    echo "Contigs for ${sample}: ${contigs_fasta}"
-
-    # Run PlasmidID
-    echo "Running PlasmidID for sample ${sample}"
-    echo "Plasmid database path: ${plasmid_db_path}"
-    plasmidID \
-      -1 "${R1}" \
-      -2 "${R2}" \
-      -d "${plasmid_db_path}" \
-      -c "${contigs_fasta}" \
-      -a "${gff_file}" \
-      --no-trim \
-      -g PSEUDO \
-      -s "${sample}" \
-      -T 16
-  else
-    echo -e "\tERROR!!! File not found: ${input_dir}/*R1.trim.fastq.gz"
-    exit
-  fi
-done
-```
-
-c) When doing plasmid contigs.fasta assembly but gff file is available, provide path to gff file
-
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -681,42 +512,38 @@ set -e
 module purge
 module load plasmidid/1.6.5
 
-# Define/make directories and database path
-input_dir="./results/fastp"
+# Define directories and database path
+fastp_dir="./results/fastp"
 plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
 
 echo "Running PlasmidID"
-
-for R1 in "${input_dir}"/*.R1.trim.fastq.gz; do
+# Iterate over all the samples
+for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
   if [ -f "${R1}" ]; then
     # Extract the sample name
     sample=$(basename "${R1}" .R1.trim.fastq.gz)
 
     # Define R2 file path
-    R2="${input_dir}/${sample}.R2.trim.fastq.gz"
-
-    # Create the output directory for plasmid assembly
-    assembly_output_dir="${output_dir}/${sample}"
-    mkdir -p "${assembly_output_dir}"
+    R2="${fastp_dir}/${sample}.R2.trim.fastq.gz"
 
     # Run PlasmidID for plasmid assembly
     echo "Running PlasmidID for sample ${sample}"
+    echo "R1 file ${sample}: ${R1}"
+    echo "R2 file ${sample}: ${R2}"
     echo "Plasmid database path: ${plasmid_db_path}"
-    echo "Output directory for plasmid assembly: ${assembly_output_dir}"
     plasmidID \
       -1 "${R1}" \
       -2 "${R2}" \
       -d "${plasmid_db_path}" \
-      -a "${gff_file}" \
       -s "${sample}" \
-      -g PSEUDO \
       --no-trim \
       -T 16
   else
-    echo -e "\tERROR!!! File not found: ${input_dir}/*R1.trim.fastq.gz"
+    echo -e "\tERROR!!! File not found: ${fastp_dir}/*R1.trim.fastq.gz"
     exit
   fi
 done
+   
 ```
 
 11.Genome Assessment [input file contigs.fasta)
@@ -928,29 +755,56 @@ View protein abundances
 ```
 less -S protein_abundances.txt
 ```
-ii) fo all files.
+ii) for all files.
+
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J Prokka
-#SBATCH -n 4
+#SBATCH -J Prokka_plasmidID
+#SBATCH -n 16
 
-# Set the path to the directory containing the input files
-input_dir=./results/spades
+# Exit with error reporting
+set -e
 
-# Set the path to the directory where the output will be saved
-output_dir=./results/prokka
+# Load modules
+module purge
+module load prokka/1.14.6
+
+# Define directories
+spades_dir="./results/spades"
+prokka_dir="./results/prokka"
 
 # Make the output directory if it doesn't exist
-mkdir -p "${output_dir}"
+mkdir -p "${prokka_dir}"
 
-# Loop through all FASTA files in the input directory
-for file in ${input_dir}/*.fasta; do
-    filename=$(basename "$file")
-    output_path="${output_dir}/${filename%.*}"
-    
-    # Run the Prokka command on the current file
-    prokka "$file" --outdir "$output_path" --cpus 4 --mincontiglen 200 --centre C --locustag L --compliant --force
+echo "Running Prokka"
+# Loop through all contigs.fasta files in the input directory
+for sample_dir in "${spades_dir}"/*; do
+    if [ -d "$sample_dir" ]; then
+        sample=$(basename "$sample_dir")
+        contigs_file="${sample_dir}/contigs.fasta"
+                
+        if [ -f "$contigs_file" ]; then
+            output_path="${prokka_dir}/${sample}"
+
+            # Echo contigs file path for the current sample
+            echo "contigs_fasta for ${sample}: ${contigs_file}"
+            
+            # Run the Prokka command on the current file
+            echo "Processing Prokka for sample: ${sample}"
+            prokka "$contigs_file" \
+                --outdir "$output_path" \
+                --cpus 16 \
+                --mincontiglen 200 \
+                --centre C \
+                --locustag L \
+                --compliant \
+                --force \
+                --debug
+        else
+            echo "ERROR!!! contigs_fasta not found for sample: ${sample}"
+        fi
+    fi
 done
 ```
 Save and run
