@@ -437,6 +437,64 @@ do
          --debug
 done
 ```
+PLasmid assembly and Annotation using assembly.fasta or contigs.fasta if plasmid assembly uisng flye palsmid failed (Recommended)/Used here
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Flair_plasmidID
+#SBATCH -n 3
+
+# Exit with error reporting
+set -e
+
+# Load modules
+module purge
+module load plasmidid/1.6.5
+
+# Define directories and database path
+flye_dir="./results/flye"
+output_db="./plasmidIDdb"
+dateNow=$(date +"%Y-%m-%d")
+#dateNow="2023-06-29"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_db}"
+
+# Download PlasmidID database and set database path
+download_plasmid_database.py -o "${output_db}"
+plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+#plasmid_db_path="./plasmidIDdb/2023-06-29_plasmids.fasta"
+
+echo "Running PlasmidID"
+# Loop through all assembly.fasta files in the input directory
+for sample_dir in "${flye_dir}"/*; do
+    if [ -d "$sample_dir" ]; then
+        sample=$(basename "$sample_dir")
+
+        # Define contigs path
+        assembly_fasta="${sample_dir}/assembly.fasta"
+
+        if [ -f "$assembly_fasta" ]; then
+            output_path="${flye_dir}/${sample}"
+
+            # Echo assembly file for the current sample
+            echo "Assembly fasta for ${sample}: ${assembly_fasta}"
+
+            # Run PlasmidID
+            echo "Running PlasmidID for sample ${sample}"
+            echo "Plasmid database path: ${plasmid_db_path}"
+            plasmidID \
+                -c "$assembly_fasta" \
+                -d "${plasmid_db_path}" \
+                -s "${sample}" \
+                --no-trim \
+                -T 3
+        else
+            echo "ERROR!!! contigs_file not found for sample: ${sample}"
+        fi
+    fi
+done
+```
 11. Species Identification using blast
 
 ```
