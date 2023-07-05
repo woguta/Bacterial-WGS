@@ -496,7 +496,7 @@ for sample_dir in "${flye_dir}"/*; do
 done
 ```
 
-If the script exits with error 1, make a new directory in which samples not meeting the threshold/giving errors are remove. Then run this script
+If the script exits with error 1, make a new directory in which samples not meeting the threshold/giving errors are removed. Then run this script
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
