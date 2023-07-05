@@ -555,6 +555,83 @@ for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
 done
    
 ```
+If the script keeps on exit with an error, make a new direction and remove samples not meeting the threshold and run this script
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J CPPA_plasmidID
+#SBATCH -n 5
+
+# Exit with error reporting
+#set -e
+
+# Load modules
+module purge
+module load plasmidid/1.6.5
+
+# Define directories and database path
+fastp_dir="./results/fastp1"
+output_db="./plasmidIDdb"
+#dateNow=$(date +"%Y-%m-%d")
+#dateNow="2023-06-29"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_db}"
+
+# Download PlasmidID database and set database path
+#download_plasmid_database.py -o "${output_db}"
+#plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+plasmid_db_path="./plasmidIDdb/2023-06-29_plasmids.fasta"
+
+run_plasmidID() {
+    trap ' echo Error $? occurred  on $LINENO && exit 1 ' ERR
+    plasmidID \
+      -1 "${R1}" \
+      -2 "${R2}" \
+      -d "${plasmid_db_path}" \
+      -s "${sample}" \
+      --no-trim \
+      -T 5
+}
+
+echo "Running PlasmidID"
+# Iterate over all the samples
+for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
+  if [ -f "${R1}" ]; then
+    # Extract the sample name
+    sample=$(basename "${R1}" .R1.trim.fastq.gz)
+
+    # Define R2 file path
+    R2="${fastp_dir}/${sample}.R2.trim.fastq.gz"
+
+    # Check if plasmidID results already exist for ${sample}
+    if [ -f "./NO_GROUP/${sample}/${sample}_final_results.tab" ]
+    then
+       echo "Results already exist for sample ${sample}. Skipping."
+    continue
+    else
+      echo "Proceeding with analysis of ${sample}..."
+    fi
+
+    # Run PlasmidID for plasmid assembly
+    echo "Running PlasmidID for sample ${sample}"
+    echo "R1 file ${sample}: ${R1}"
+    echo "R2 file ${sample}: ${R2}"
+    echo "Plasmid database path: ${plasmid_db_path}"
+   run_plasmidID
+   if [ $? -eq 0 ]
+   then
+      echo "PlasmidID analysis of ${sample} successful..."
+   else
+      echo -e "\tPlasmidID analysis of ${sample} was NOT successful...\n\tSkipping to the next Sample"
+      continue
+   fi
+  else
+    echo -e "\tERROR!!! File not found: ${fastp_dir}/*R1.trim.fastq.gz"
+    exit
+  fi
+done
+```
 
 11.Genome Assessment [input file contigs.fasta)
 
