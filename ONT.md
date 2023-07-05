@@ -1044,3 +1044,162 @@ java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
         -v RS35
 ```
 ii) Run snpEff for each spp
+
+a) E .coli samples
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J BwaBcf_VC
+#SBATCH -n 16
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Load necessary modules
+module purge
+module load bwa/0.7.17
+module load samtools/1.15.1
+module load bcftools/1.15.1
+module load snpeff/4.1g
+module load java/17
+
+# Specify the directories
+input_dir="./results/porechop"
+output_dir="./results/bwamem"
+output_dir2="./results/bcf_variants"
+
+# Define the path to the reference genome FASTA file
+reference_file="./database/snpEff/data/MG1655/sequences.fa"
+
+# Make output directories if not available
+mkdir -p "${output_dir}"
+mkdir -p "${output_dir2}"
+
+# Define the output prefix for the index files and its directory
+reference_prefix="${output_dir}/MG1655/MG1655"
+mkdir -p "${reference_prefix}"
+
+# Step 1: Index the reference genome
+echo "Indexing the reference genome..."
+bwa index -p "${reference_prefix}" -a bwtsw "${reference_file}"
+
+echo "Processing E. coli samples"
+#Define E. coli samples
+ecoli_samples=(
+  "${input_dir}/barcode_18.trimmed.fastq.gz"
+  "${input_dir}/barcode_19.trimmed.fastq.gz"
+  "${input_dir}/barcode_20.trimmed.fastq.gz"
+  "${input_dir}/barcode_25.trimmed.fastq.gz"
+  "${input_dir}/barcode_26.trimmed.fastq.gz"
+  "${input_dir}/barcode_27.trimmed.fastq.gz"
+  "${input_dir}/barcode_29.trimmed.fastq.gz"
+  "${input_dir}/barcode_30.trimmed.fastq.gz"
+  "${input_dir}/barcode_31.trimmed.fastq.gz"
+  "${input_dir}/barcode_32.trimmed.fastq.gz"
+  "${input_dir}/barcode_33.trimmed.fastq.gz"
+  "${input_dir}/barcode_34.trimmed.fastq.gz"
+  "${input_dir}/barcode_35.trimmed.fastq.gz"
+  "${input_dir}/barcode_36.trimmed.fastq.gz"
+  "${input_dir}/barcode_37.trimmed.fastq.gz"
+  "${input_dir}/barcode_38.trimmed.fastq.gz"
+  "${input_dir}/barcode_39.trimmed.fastq.gz"
+  "${input_dir}/barcode_40.trimmed.fastq.gz"
+  "${input_dir}/barcode_41.trimmed.fastq.gz"
+  "${input_dir}/barcode_42.trimmed.fastq.gz"
+  "${input_dir}/barcode_43.trimmed.fastq.gz"
+  "${input_dir}/barcode_34.trimmed.fastq.gz"
+)
+
+echo "E. coli samples: ${ecoli_samples[@]}"
+for sample in "${ecoli_samples[@]}"; do
+  # Extract the sample name
+  sample_name=$(basename "${sample}" .trimmed.fastq.gz)
+
+  # Define input file path
+  input_file="${sample}"
+
+# Step 2: Perform alignment and generate sorted BAM files for each sample name
+echo "Performing alignment..."
+echo "Processing sample: ${sample_name}"
+echo "Input file for ${sample_name}: ${input_file}"
+#Perform alignment
+  bwa mem -t 16 "${reference_prefix}" "${input_file}" |
+  samtools view -bS - |
+  samtools sort -@ 16 -o "${output_dir}/${sample_name}.sorted.bam" -
+  samtools index "${output_dir}/${sample_name}.sorted.bam"
+done
+
+# Some stats
+echo "Generating alignment statistics..."
+for sorted_bam in "${output_dir}"/*.sorted.bam; do
+    sample_name=$(basename "${sorted_bam}" .sorted.bam)
+    samtools flagstat "${sorted_bam}"
+done
+
+# Step 3: Perform variant calling on each sample
+echo "Performing variant calling..."
+for sorted_bam in "${output_dir}"/*.sorted.bam; do
+    sample_name=$(basename "${sorted_bam}" .sorted.bam)
+    echo "Processing sample: ${sample_name}"
+    bcftools mpileup -Ou -f "${reference_file}" "${sorted_bam}" |
+    bcftools call --threads 16 --ploidy 1 -Ou -mv -o "${output_dir2}/${sample_name}.vcf"
+done
+
+# Step 4: Filter and report the SNVs variants in variant calling format (VCF)
+echo "Filtering variants..."
+for vcf_file in "${output_dir2}"/*.vcf; do
+    sample_name=$(basename "${vcf_file}" .vcf)
+    echo "Processing sample: ${sample_name}"
+    bcftools filter --threads 16 -i 'DP>=10' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
+done
+
+# Step 5: Index the filtered VCF files
+echo "Indexing filtered VCF files..."
+for filtered_vcf in "${output_dir2}"/*.filtered.vcf; do
+    echo "Indexing: ${filtered_vcf}"
+    bcftools index --threads 16 "${filtered_vcf}"
+done
+
+# Step 6: Variant Annotation with GFF file
+# Define input files and directories
+vcf_dir="${output_dir2}"
+annotated_dir="./results/annotated_variants"
+reference_file="./database/snpEff/data/MG1655/sequences.fa"
+gff_file="../database/snpEff/data/MG1655/genes.gff"
+snpeff_jar="/export/apps/snpeff/4.1g/snpEff.jar"
+
+# Create output directory for annotated variants
+mkdir -p "$annotated_dir"
+
+# Run SnpEff for variant annotation
+echo "Performing variant annotation..."
+for vcf_file in "$vcf_dir"/*.filtered.vcf; do
+    sample_name=$(basename "${vcf_file}" .filtered.vcf)
+    echo "Processing sample: $sample_name"
+    bcftools view --threads 16 "$vcf_file" |
+    java -Xmx4g -jar "$snpeff_jar" \
+           -config ./database/snpEff/data/MG1655/snpEff.config \
+	   -dataDir ./../ \
+	   -v MG1655 ${vcf_file} > "${annotated_dir}/${sample_name}.snpeff.vcf"
+done
+
+echo "Variant annotation complete."
+
+# Step 7: Rename summary.html and genes.txt and zip vcf files
+mv ./snpEff_summary.html "${annotated_dir}/${sample_name}.snpeff.summary.html"
+mv ./snpEff_genes.txt "${annotated_dir}/${sample_name}.snpeff.genes.txt"
+
+# Compress vcf
+bgzip -c "${annotated_dir}/${sample_name}.snpeff.vcf" > "${annotated_dir}/${sample_name}.snpeff.vcf.gz"
+
+# Create tabix index - Samtools
+tabix -p vcf -f "${annotated_dir}/${sample_name}.snpeff.vcf.gz"
+
+# Generate VCF files
+bcftools stats "${annotated_dir}/${sample_name}.snpeff.vcf.gz" > "${annotated_dir}/${sample_name}.snpeff.stats.txt"
+
+echo "Variant summar renaming, compressing complete."
+
+done
+```
