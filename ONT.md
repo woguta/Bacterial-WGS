@@ -1042,4 +1042,5 @@ java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
         -dataDir ./../ \
         -gff3 \
         -v RS35
-
+```
+ii) Run snpEff for each spp
