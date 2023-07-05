@@ -495,6 +495,85 @@ for sample_dir in "${flye_dir}"/*; do
     fi
 done
 ```
+
+If the script exits with error 1, make a new directory in which samples not meeting the threshold/giving errors are remove. Then run this script
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Flair_plasmidID
+#SBATCH -n 5
+
+# Exit with error reporting
+#set -e
+
+# Load modules
+module purge
+module load plasmidid/1.6.5
+
+# Define directories and database path
+flye_dir="./results/flye1"
+output_db="./plasmidIDdb"
+#dateNow=$(date +"%Y-%m-%d")
+#dateNow="2023-06-29"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_db}"
+
+# Download PlasmidID database and set database path
+#download_plasmid_database.py -o "${output_db}"
+#plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+plasmid_db_path="./plasmidIDdb/2023-06-29_plasmids.fasta"
+
+run_plasmidID() {
+   trap ' echo Error $? occurred  on $LINENO && exit 1 ' ERR
+   plasmidID \
+        -c "$assembly_fasta" \
+        -d "${plasmid_db_path}" \
+        -s "${sample}" \
+        --no-trim \
+        -T 5
+}
+
+echo "Running PlasmidID"
+# Loop through all assembly.fasta files in the input directory
+for sample_dir in "${flye_dir}"/*; do
+    if [ -d "$sample_dir" ]; then
+        sample=$(basename "$sample_dir")
+
+        # Define contigs path
+        assembly_fasta="${sample_dir}/assembly.fasta"
+
+        if [ -f "$assembly_fasta" ]; then
+            output_path="${flye_dir}/${sample}"
+
+            # Echo assembly file for the current sample
+            echo "Assembly fasta for ${sample}: ${assembly_fasta}"
+
+            # Check if plasmidID results already exist for ${sample}
+            if [ -f "./NO_GROUP/${sample}/${sample}_final_results.tab" ]
+            then
+               echo "Results already exist for sample ${sample}. Skipping."
+            continue
+            else
+               echo "Proceeding with analysis of ${sample}..."
+            fi
+
+             # Run PlasmidID
+            echo "Running PlasmidID for sample ${sample}"
+            echo "Plasmid database path: ${plasmid_db_path}"
+            run_plasmidID
+            if [ $? -eq 0 ]; then
+                echo "PlasmidID analysis of ${sample} successful..."
+            else
+                echo -e "\tPlasmidID analysis of ${sample} was NOT successful...\n\tS$      continue
+            fi
+            else
+                echo -e "ERROR!!! contigs_file not found for sample: ${sample}"
+            exit
+        fi
+    fi
+done
+```
 11. Species Identification using blast
 
 ```
