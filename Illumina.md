@@ -1831,20 +1831,27 @@ for vcf_file in "${output_dir2}"/*.vcf; do
     bcftools filter --threads 16 -i 'DP>=10' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
 done
 
-# Step 5: Index the filtered VCF files
-echo "Indexing filtered VCF files..."
+#Step 5: Compress the filtered VCF files #bgzip -c file.vcf > file.vcf.gz
+echo "Compressing filtered VCF files..."
 for filtered_vcf in "${output_dir2}"/*.filtered.vcf; do
-    echo "Indexing: ${filtered_vcf}"
-    bcftools index --threads 16 "${filtered_vcf}"
+    echo "Compressing: ${filtered_vcf}"
+    bgzip "${filtered_vcf}"
 done
 
-# Step 6: Variant Annotation with GFF file
+# Step 6: Index the filtered.vcf.gz VCF files
+echo "Indexing filtered VCF files..."
+for filtered_vcf_gz in "${output_dir2}"/*.filtered.vcf.gz; do
+    echo "Indexing: ${filtered_vcf_gz}"
+    bcftools index -c --threads 16 "${filtered_vcf_gz}"
+done
+
+# Step 7: Variant Annotation with GFF file
 # Define input files and directories
 vcf_dir="${output_dir2}"
 annotated_dir="./results/annotated_variants"
 reference_file="./genome_ref/pseudomonas_aeruginosa_PAO1.fasta"
 gff_file="./genome_ref/pseudomonas_aeruginosa_PAO1.gff"
-snpeff_jar="/export/apps/snpeff/5.1g/snpEff.jar"
+snpeff_jar="/export/apps/snpeff/4.1g/snpEff.jar"
 
 # Create output directory for annotated variants
 mkdir -p "$annotated_dir"
@@ -1852,29 +1859,29 @@ mkdir -p "$annotated_dir"
 # Run SnpEff for variant annotation
 echo "Performing variant annotation..."
 for vcf_file in "$vcf_dir"/*.filtered.vcf; do
-    sample_name=$(basename "${vcf_file}" .filtered.vcf)
+    sample_name=$(basename "${vcf_file}" .filtered.vcf.gz)
     echo "Processing sample: $sample_name"
     bcftools view --threads 16 "$vcf_file" |
     java -Xmx4g -jar "$snpeff_jar" \
            -config ./database/snpEff/data/PAO1/snpEff.config \
 	   -dataDir ./../ \
-	   -v PAO1 ${vcf_file} > "${annotated_dir}/${sample_name}.snpeff.vcf"
+	   -v PAO1 ${vcf_file} > "${annotated_dir}/${sample_name}.snpEff.vcf"
 done
 
 echo "Variant annotation complete."
 
 # Step 7: Rename summary.html and genes.txt and zip vcf files
-mv ./snpEff_summary.html "${annotated_dir}/${sample_name}.snpeff.summary.html"
-mv ./snpEff_genes.txt "${annotated_dir}/${sample_name}.snpeff.genes.txt"
+mv ./snpEff_summary.html "${annotated_dir}/${sample_name}.snpEff.summary.html"
+mv ./snpEff_genes.txt "${annotated_dir}/${sample_name}.snpEff.genes.txt"
 
 # Compress vcf
-bgzip -c "${annotated_dir}/${sample_name}.snpeff.vcf" > "${annotated_dir}/${sample_name}.snpeff.vcf.gz"
+bgzip -c "${annotated_dir}/${sample_name}.snpEff.vcf" > "${annotated_dir}/${sample_name}.snpEff.vcf.gz"
 
 # Create tabix index - Samtools
-tabix -p vcf -f "${annotated_dir}/${sample_name}.snpeff.vcf.gz"
+tabix -p vcf -f "${annotated_dir}/${sample_name}.snpEff.vcf.gz"
 
 # Generate VCF files
-bcftools stats "${annotated_dir}/${sample_name}.snpeff.vcf.gz" > "${annotated_dir}/${sample_name}.snpeff.stats.txt"
+bcftools stats "${annotated_dir}/${sample_name}.snpEff.vcf.gz" > "${annotated_dir}/${sample_name}.snpEff.stats.txt"
 
 echo "Variant summar renaming, compressing complete."
 
@@ -1888,11 +1895,11 @@ mkdir -p "$extracted_dir"
 
 # Run SnpSift for variant extraction
 echo "Performing variant extraction..."
-for snpeff_file in "$snpeff_dir"/*.snpeff.vcf.gz; do
-    sample_name=$(basename "${snpeff_file}" .snpeff.vcf.gz)
+for snpeff_file in "$snpeff_dir"/*.snpEff.vcf.gz; do
+    sample_name=$(basename "${snpeff_file}" .snpEff.vcf.gz)
     echo "Processing sample: $sample_name"
     bcftools view -t 16 "$snpeff_file" |
-    java -Xmx4g -jar "/export/apps/snpeff/5.1g/snpSift.jar" \
+    java -Xmx4g -jar "/export/apps/snpeff/4.1g/snpSift.jar" \
         extractFields \
         -s "," \
         -e "." \
