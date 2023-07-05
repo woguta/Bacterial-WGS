@@ -1205,7 +1205,7 @@ tabix -p vcf -f "${annotated_dir}/${sample_name}.snpEff.vcf.gz"
 # Generate VCF files
 bcftools stats "${annotated_dir}/${sample_name}.snpEff.vcf.gz" > "${annotated_dir}/${sample_name}.snpEff.stats.txt"
 
-echo "Variant summar renaming, compressing complete."
+echo "Variant summary renaming, compressing complete."
 
 done
 ```
