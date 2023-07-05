@@ -633,6 +633,8 @@ for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
 done
 ```
 
+Plasmid data extraction R scripts
+
 11.Genome Assessment [input file contigs.fasta)
 
 I) Genome contiguity
