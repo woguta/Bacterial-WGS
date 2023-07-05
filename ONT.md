@@ -938,3 +938,108 @@ write.csv(agg_df, file = output_file, row.names = FALSE)
 }
 done
 ```
+13. Variants Calling eg SNVs
+
+i) Build snpEff config database for each bacterial species. wget the genome.fna  and gff files 
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J snpEff_db
+#SBATCH -n 3
+
+#Load modules
+module purge
+module load snpeff/4.1g
+module load java/17
+
+# Exit with error debug
+set -e
+
+#Define input directories
+input_dir="./genome_ref"
+
+#snpEff config for P. aeruginosa
+echo "Processing snpEff config for P. aeruginosa"
+mkdir -p ./database/snpEff/data/PAO1/
+cp -rf $input_dir/P_aeruginosa/P_aureginosa_PA01_genomic.gff ./database/snpEff/data/PAO1/genes.gff
+cp -rf $input_dir/P_aeruginosa/P_aureginosa_PA01_genomic.fna ./database/snpEff/data/PAO1/sequences.fa
+echo -e "# P. aeruginosa bacterial genome, version PseudomonasPAO1\nPAO1.genome: PAO1" > ./database/snpEff/data/PAO1/snpEff.config
+
+#Build the database
+java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
+        -config ./database/snpEff/data/PAO1/snpEff.config \
+        -dataDir ./../ \
+        -gff3 \
+        -v PAO1
+
+#snpEff config S.aureus
+echo "Processing snpEff config for S. aureus"
+mkdir -p ./database/snpEff/data/NCTC8325/
+cp -rf $input_dir/S_aureus/S_aureus_subsp_aureus_NCTC8325.gff ./database/snpEff/data/NCTC8325/genes.gff
+cp -rf $input_dir/S_aureus/S_aureus_subsp_aureus_NCTC8325.fasta ./database/snpEff/data/NCTC8325/sequences.fa
+echo -e "# S. aureus bacterial genome, version StaphylococcusNCTC8325\nNCTC8325.genome: NCTC8325" > ./database/snpEff/data/NCTC8325/snpEff.config
+
+#Build the database
+java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
+        -config ./database/snpEff/data/NCTC8325/snpEff.config \
+        -dataDir ./../ \
+        -gff3 \
+        -v NCTC8325
+
+#snpEff config S. sciuri
+echo "Processing snpEff config for S. sciuri"
+mkdir -p ./database/snpEff/data/ASM220916v2/
+cp -rf $input_dir/S_sciuri/Staphylococcus_sciuri_ASM220916v2.gff ./database/snpEff/data/ASM220916v2/genes.gff
+cp -rf $input_dir/S_sciuri/Staphylococcus_sciuri_ASM220916v2.fna ./database/snpEff/data/ASM220916v2/sequences.fa
+echo -e "# S. sciuri bacterial genome, version StaphylococcusASM220916v2\nASM220916v2.genome: ASM220916v2" > ./database/snpEff/data/ASM220916v2/snpEff.config
+
+#Build the database
+java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
+        -config ./database/snpEff/data/ASM220916v2/snpEff.config \
+        -dataDir ./../ \
+        -gff3 \
+        -v ASM220916v2
+
+#snpEff config S. warneri
+echo "Processing snpEff config for S. warneri"
+mkdir -p ./database/snpEff/data/22.1/
+cp -rf ./genome_ref/S_warneri/Staphylococcus_warneri_22.1.gff ./database/snpEff/data/22.1/genes.gff
+cp -rf ./genome_ref/S_warneri/Staphylococcus_warneri_22.1.fna ./database/snpEff/data/22.1/sequences.fa
+echo -e "# S. warneri bacterial genome, version Staphylococcus22.1\n22.1.genome: 22.1" > ./database/snpEff/data/22.1/snpEff.config
+
+#Build the database
+java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
+        -config ./database/snpEff/data/22.1/snpEff.config \
+        -dataDir ./../ \
+        -gff3 \
+        -v 22.1
+
+#snpEff config E. coli
+echo "Processing snpEff config for E. coli"
+mkdir -p ./database/snpEff/data/MG1655/
+cp -rf $input_dir/E_coli/E_coli_str_K-12_substr_MG1655_genomic.gff ./database/snpEff/data/MG1655/genes.gff
+cp -rf $input_dir/E_coli/E_coli_str_K-12_substr_MG1655_genomic.fasta ./database/snpEff/data/MG1655/sequences.fa
+echo -e "# E. coli bacterial genome, version EscherichiaMG1655\nMG1655.genome: MG1655" > ./database/snpEff/data/MG1655/snpEff.config
+
+#Build the database
+java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
+        -config ./database/snpEff/data/MG1655/snpEff.config \
+        -dataDir ./../ \
+        -gff3 \
+        -v MG1655
+
+#snpEff config E. cloacae
+echo "Processing snpEff config for E. cloacae"
+mkdir -p ./database/snpEff/data/RS35/
+cp -rf $input_dir/E_cloacae/Enterobacter_cloacae_strain_RS35.gff ./database/snpEff/data/RS35/genes.gff
+cp -rf $input_dir/E_cloacae/Enterobacter_cloacae_strain_RS35.fna ./database/snpEff/data/RS35/sequences.fa
+echo -e "# E. cloacae bacterial genome, version EnterobacterRS35\nRS35.genome: RS35" > ./database/snpEff/data/RS35/snpEff.config
+
+#Build the database
+java -Xmx4g -jar /export/apps/snpeff/4.1g/snpEff.jar build \
+        -config ./database/snpEff/data/RS35/snpEff.config \
+        -dataDir ./../ \
+        -gff3 \
+        -v RS35
+
