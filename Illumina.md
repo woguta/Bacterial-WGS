@@ -555,7 +555,7 @@ for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
 done
    
 ```
-If the script keeps on exit with an error, make a new direction and remove samples not meeting the threshold and run this script
+If the script keeps on exiting with error 1, make a new directory and remove samples not meeting the threshold. Afterwards run this script to continue
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
