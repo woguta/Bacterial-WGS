@@ -1898,7 +1898,7 @@ echo "Performing variant extraction..."
 for snpeff_file in "$snpeff_dir"/*.snpEff.vcf.gz; do
     sample_name=$(basename "${snpeff_file}" .snpEff.vcf.gz)
     echo "Processing sample: $sample_name"
-    bcftools view -t 16 "$snpeff_file" |
+    bcftools view --threads 16 "$snpeff_file" |
     java -Xmx4g -jar "/export/apps/snpeff/4.1g/snpSift.jar" \
         extractFields \
         -s "," \
