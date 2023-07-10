@@ -1916,6 +1916,8 @@ for snpeff_file in "$snpeff_dir"/*.snpEff.vcf.gz; do
         "NMD[*].GENE" "NMD[*].GENEID" "NMD[*].NUMTR" "NMD[*].PERC" \
         > "${extracted_dir}/${sample_name}.snpsift.txt"
 done
+
+echo "SnpSift variant extraction complete"
 ```
 
 iv) Extracting the annotated_variants from snpsift.txt using R
