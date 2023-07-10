@@ -1050,8 +1050,8 @@ a) E .coli samples
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J BwaBcf_VC
-#SBATCH -n 16
+#SBATCH -J Ecoli_snpEff
+#SBATCH -n 8
 
 # Exit immediately if a command exits with a non-zero status
 set -e
@@ -1066,8 +1066,8 @@ module load java/17
 
 # Specify the directories
 input_dir="./results/porechop"
-output_dir="./results/bwamem"
-output_dir2="./results/bcf_variants"
+output_dir="./results/bwamem_ecoli"
+output_dir2="./results/bcf_ecoli_variants"
 
 # Define the path to the reference genome FASTA file
 reference_file="./database/snpEff/data/MG1655/sequences.fa"
@@ -1126,7 +1126,7 @@ echo "Input file for ${sample_name}: ${input_file}"
 #Perform alignment
   bwa mem -t 16 "${reference_prefix}" "${input_file}" |
   samtools view -bS - |
-  samtools sort -@ 16 -o "${output_dir}/${sample_name}.sorted.bam" -
+  samtools sort -@ 8 -o "${output_dir}/${sample_name}.sorted.bam" -
   samtools index "${output_dir}/${sample_name}.sorted.bam"
 done
 
@@ -1143,18 +1143,18 @@ for sorted_bam in "${output_dir}"/*.sorted.bam; do
     sample_name=$(basename "${sorted_bam}" .sorted.bam)
     echo "Processing sample: ${sample_name}"
     bcftools mpileup -Ou -f "${reference_file}" "${sorted_bam}" |
-    bcftools call --threads 16 --ploidy 1 -Ou -mv -o "${output_dir2}/${sample_name}.vcf"
+    bcftools call --threads 8 --ploidy 1 -Ou -mv -o "${output_dir2}/${sample_name}.vcf"
 done
 
 # Step 4: Filter and report the SNVs variants in variant calling format (VCF)
 echo "Filtering variants..."
 for vcf_file in "${output_dir2}"/*.vcf; do
     sample_name=$(basename "${vcf_file}" .vcf)
-    echo "Processing sample: ${sample_name}"
-    bcftools filter --threads 16 -i 'DP>=10' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
+    echo "Processing ${sample_name}: ${vcf_file}"
+    bcftools filter --threads 8 -i 'DP>=10' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
 done
 
-#Step 5: Compress the filtered VCF files#bgzip -c file.vcf > file.vcf.gz
+#Step 5: Compress the filtered VCF files #bgzip -c file.vcf > file.vcf.gz
 echo "Compressing filtered VCF files..."
 for filtered_vcf in "${output_dir2}"/*.filtered.vcf; do
     echo "Compressing: ${filtered_vcf}"
@@ -1165,13 +1165,13 @@ done
 echo "Indexing filtered VCF files..."
 for filtered_vcf_gz in "${output_dir2}"/*.filtered.vcf.gz; do
     echo "Indexing: ${filtered_vcf_gz}"
-    bcftools index -c --threads 16 "${filtered_vcf_gz}"
+    bcftools index -c --threads 8 "${filtered_vcf_gz}"
 done
 
 # Step 7: Variant Annotation with GFF file
 # Define input files and directories
 vcf_dir="${output_dir2}"
-annotated_dir="./results/annotated_variants"
+annotated_dir="./results/annotated_ecoli_variants"
 reference_file="./database/snpEff/data/MG1655/sequences.fa"
 gff_file="../database/snpEff/data/MG1655/genes.gff"
 snpeff_jar="/export/apps/snpeff/4.1g/snpEff.jar"
@@ -1184,7 +1184,7 @@ echo "Performing variant annotation..."
 for vcf_file in "$vcf_dir"/*.filtered.vcf.gz; do
     sample_name=$(basename "${vcf_file}" .filtered.vcf.gz)
     echo "Processing sample: $sample_name"
-    bcftools view --threads 16 "$vcf_file" |
+    bcftools view --threads 8 "$vcf_file" |
     java -Xmx4g -jar "$snpeff_jar" \
            -config ./database/snpEff/data/MG1655/snpEff.config \
            -dataDir ./../ \
@@ -1207,5 +1207,37 @@ bcftools stats "${annotated_dir}/${sample_name}.snpEff.vcf.gz" > "${annotated_di
 
 echo "Variant summary renaming, compressing complete."
 
+done
+
+# Step 9: Variant Extraction with SnpSift
+# Define input files and directories
+snpeff_dir="${annotated_dir}"
+extracted_dir="./results/extracted_variants"
+
+# Create output directory for extracted variants
+mkdir -p "$extracted_dir"
+
+# Run SnpSift for variant extraction #barcode_1.filtered.snpEff.genes.txt
+echo "Performing variant extraction..."
+for snpeff_file in "$snpeff_dir"/*.snpEff.vcf.gz; do
+    sample_name=$(basename "${snpeff_file}" .snpEff.vcf.gz)
+    echo "Processing ${sample_name}: ${snpeff_file}"
+    bcftools view --threads 5 "$snpeff_file" |
+    java -Xmx4g -jar "/export/apps/snpeff/4.1g/SnpSift.jar" \
+        extractFields \
+        -s "," \
+        -e "." \
+        /dev/stdin \
+        "ANN[*].GENE" "ANN[*].GENEID" \
+        "ANN[*].IMPACT" "ANN[*].EFFECT" \
+        "ANN[*].FEATURE" "ANN[*].FEATUREID" \
+        "ANN[*].BIOTYPE" "ANN[*].RANK" "ANN[*].HGVS_C" \
+        "ANN[*].HGVS_P" "ANN[*].CDNA_POS" "ANN[*].CDNA_LEN" \
+        "ANN[*].CDS_POS" "ANN[*].CDS_LEN" "ANN[*].AA_POS" \
+        "ANN[*].AA_LEN" "ANN[*].DISTANCE" "EFF[*].EFFECT" \
+        "EFF[*].FUNCLASS" "EFF[*].CODON" "EFF[*].AA" "EFF[*].AA_LEN" \
+        "LOF[*].GENE" "LOF[*].GENEID" "LOF[*].NUMTR" "LOF[*].PERC" \
+        "NMD[*].GENE" "NMD[*].GENEID" "NMD[*].NUMTR" "NMD[*].PERC" \
+        > "${extracted_dir}/${sample_name}.snpsift.txt"
 done
 ```
