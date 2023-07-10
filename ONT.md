@@ -1240,4 +1240,232 @@ for snpeff_file in "$snpeff_dir"/*.snpEff.vcf.gz; do
         "NMD[*].GENE" "NMD[*].GENEID" "NMD[*].NUMTR" "NMD[*].PERC" \
         > "${extracted_dir}/${sample_name}.snpsift.txt"
 done
+
+echo "SnpSift variant extraction complete"
+```
+b) Other samples here given by S.warneri
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Flair_Pseudomonas_snpEff
+#SBATCH -n 5
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Load necessary modules
+module purge
+module load bwa/0.7.17
+module load samtools/1.15.1
+module load bcftools/1.15.1
+module load snpeff/4.1g
+module load java/17
+
+# Specify the directories
+input_dir="./results/porechop/"
+output_dir="./results/bwamem_warneri"
+output_dir2="./results/bcf_warneri_variants"
+
+# Define the path to the reference genome FASTA file
+reference_file="./database/snpEff/data/22.1/sequences.fa"
+
+# Make output directories if not available
+mkdir -p "${output_dir}"
+mkdir -p "${output_dir2}"
+
+# Define the output prefix for the index files and its directory
+reference_prefix="${output_dir}/22.1/22.1"
+mkdir -p "${reference_prefix}"
+
+# Step 1: Index the reference genome
+echo "Indexing the reference genome..."
+bwa index -p "${reference_prefix}" -a bwtsw "${reference_file}"
+
+echo "Processing Pseudo samples"
+for sample in "${input_dir}"/barcode_16.trimmed.fastq.gz; do
+  #Extract the sample name
+  sample_name=$(basename "${sample}" .trimmed.fastq.gz)
+
+  #Define input file path
+  input_file="${sample}"
+
+  #Step 2: Perform alignment and generate sorted BAM files for each sample name
+  echo "Performing alignment..."
+  echo "Input file for ${sample_name}: ${input_file}"
+  bwa mem -t 5 "${reference_prefix}" "${input_file}" |
+  samtools view -bS - |
+  samtools sort -@ 5 -o "${output_dir}/${sample_name}.sorted.bam" -
+  samtools index "${output_dir}/${sample_name}.sorted.bam"
+done
+
+#Some stats
+echo "Generating alignment statistics..."
+for sorted_bam in "${output_dir}"/*.sorted.bam; do
+  sample_name=$(basename "${sorted_bam}" .sorted.bam)
+  samtools flagstat "${sorted_bam}"
+
+  #Step 3: Perform variant calling on each sample
+  echo "Proceeding with analysis of ${sample_name}..."
+  echo "Variant calling for ${sample_name}: ${sorted_bam}"
+  bcftools mpileup -Ou -f "${reference_file}" "${sorted_bam}" |
+  bcftools call --threads 5 --ploidy 1 -Ou -mv -o "${output_dir2}/${sample_name}.vcf"
+done
+
+# Step 4: Filter and report the SNVs variants in variant calling format (VCF)
+echo "Filtering variants..."
+for vcf_file in "${output_dir2}"/*.vcf; do
+    sample_name=$(basename "${vcf_file}" .vcf)
+    echo "Processing sample ${sample_name}: ${vcf_file}"
+    bcftools filter --threads 5 -i 'DP>=10' -Ov "${vcf_file}" > "${output_dir2}/${sample_name}.filtered.vcf"
+done
+
+#Step 5: Compress the filtered VCF files#bgzip -c file.vcf > file.vcf.gz
+echo "Compressing filtered VCF files..."
+for filtered_vcf in "${output_dir2}"/*.filtered.vcf; do
+    echo "Compressing: ${filtered_vcf}"
+    bgzip "${filtered_vcf}"
+done
+
+# Step 6: Index the filtered.vcf.gz VCF files
+echo "Indexing filtered VCF files..."
+for filtered_vcf_gz in "${output_dir2}"/*.filtered.vcf.gz; do
+    echo "Indexing: ${filtered_vcf_gz}"
+    bcftools index -c --threads 5 "${filtered_vcf_gz}"
+done
+
+#Step 7: Variant Annotation with GFF file
+#Define input files and directories
+vcf_dir="${output_dir2}"
+annotated_dir="./results/annotated_pseudo_variants"
+reference_file="./database/snpEff/data/22.1/sequences.fa"
+gff_file="../database/snpEff/data/22.1/genes.gff"
+snpeff_jar="/export/apps/snpeff/4.1g/snpEff.jar"
+
+#Create output directory for annotated variants
+mkdir -p "$annotated_dir"
+
+#echo "Variant annotation for VCF files..."
+for filtered_vcf_gz in "${output_dir2}"/*.filtered.vcf.gz; do
+  sample_name=$(basename "${filtered_vcf_gz}" .filtered.vcf.gz)
+  echo "Performing variant SnpEff annotation ${sample_name}: ${filtered_vcf_gz}"
+  bcftools view --threads 5 "$filtered_vcf_gz" |
+  java -Xmx4g -jar "$snpeff_jar" \
+        -config ./database/snpEff/data/22.1/snpEff.config \
+        -dataDir ./../ \
+        -v 22.1 ${filtered_vcf_gz} > "${annotated_dir}/${sample_name}.snpEff.vcf"
+
+#  echo "Variant annotation complete."
+
+#Step 8: Rename summary.html and genes.txt and zip vcf files
+mv ./snpEff_summary.html "${annotated_dir}/${sample_name}.snpEff.summary.html"
+mv ./snpEff_genes.txt "${annotated_dir}/${sample_name}.snpEff.genes.txt"
+
+# Compress vcf
+bgzip -c "${annotated_dir}/${sample_name}.snpEff.vcf" > "${annotated_dir}/${sample_name}.snpEff.vcf.gz"
+
+# Create tabix index - Samtools
+tabix -p vcf -f "${annotated_dir}/${sample_name}.snpEff.vcf.gz"
+
+# Generate VCF files
+bcftools stats "${annotated_dir}/${sample_name}.snpEff.vcf.gz" > "${annotated_dir}/${sample_name}.snpEff.stats.txt"
+
+echo "Variant summary, renaming and compressing complete for: ${staph_samples[@]}"
+done
+
+# Step 9: Variant Extraction with SnpSift
+# Define input files and directories
+snpeff_dir="${annotated_dir}"
+extracted_dir="./results/extracted_variants"
+
+# Create output directory for extracted variants
+mkdir -p "$extracted_dir"
+
+# Run SnpSift for variant extraction #barcode_1.filtered.snpEff.genes.txt
+echo "Performing variant extraction..."
+for snpeff_file in "$snpeff_dir"/*.snpEff.vcf.gz; do
+    sample_name=$(basename "${snpeff_file}" .snpEff.vcf.gz)
+    echo "Processing ${sample_name}: ${snpeff_file}"
+    bcftools view --threads 5 "$snpeff_file" |
+    java -Xmx4g -jar "/export/apps/snpeff/4.1g/SnpSift.jar" \
+        extractFields \
+        -s "," \
+        -e "." \
+        /dev/stdin \
+        "ANN[*].GENE" "ANN[*].GENEID" \
+        "ANN[*].IMPACT" "ANN[*].EFFECT" \
+        "ANN[*].FEATURE" "ANN[*].FEATUREID" \
+        "ANN[*].BIOTYPE" "ANN[*].RANK" "ANN[*].HGVS_C" \
+        "ANN[*].HGVS_P" "ANN[*].CDNA_POS" "ANN[*].CDNA_LEN" \
+        "ANN[*].CDS_POS" "ANN[*].CDS_LEN" "ANN[*].AA_POS" \
+        "ANN[*].AA_LEN" "ANN[*].DISTANCE" "EFF[*].EFFECT" \
+        "EFF[*].FUNCLASS" "EFF[*].CODON" "EFF[*].AA" "EFF[*].AA_LEN" \
+        "LOF[*].GENE" "LOF[*].GENEID" "LOF[*].NUMTR" "LOF[*].PERC" \
+        "NMD[*].GENE" "NMD[*].GENEID" "NMD[*].NUMTR" "NMD[*].PERC" \
+        > "${extracted_dir}/${sample_name}.snpsift.txt"
+done
+
+echo "SnpSift variant extraction complete"
+```
+c) Extract the snpSift text variant results by R
+
+```
+#!usr/bin/bashrc -l
+
+#load neccessary modules
+module purge
+module load R/4.3
+
+#open r console/studio in the terminal
+R
+
+# Set the input directory where the sample directories are located
+input_dir <- "./extracted_variants"
+
+# Get a list of all sample directories in the input directory
+sample_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# create a vector of available extracted results
+annotated_data_type <- c("txt")
+
+for annotated_data_type {
+
+# Create an empty data frame to store the aggregated data
+agg_df <- data.frame()
+
+# Loop over each sample directory
+for (sample_dir in sample_dirs) {
+  # Get a list of all annotated result files in the current sample directory
+  file_list <- list.files(path = sample_dir, pattern = paste0("snpsift.txt"), full.names = TRUE)
+
+  # Loop over each annotated result file
+  for (file in file_list) {
+    # Read the annotated data from the file
+    annotated_data <- read.delim(file, sep = "\t")
+	
+	# skip sample if no annotated data was found
+	if (nrow(annotated_data) == 0) {
+	next
+	}
+
+    # Extract the sample name from the file path
+    sample_name <- tools::file_path_sans_ext(basename(sample_dir))
+
+    # Add the sample name as a column in the data frame
+    annoatated_data$sample_name <- sample_name
+
+    # Append the data to the aggregated data frame
+    agg_df <- rbind(agg_df, annotated_data)
+  }
+}
+
+# Set the output file name
+output_file <- paste0("combined_annotated_data.csv")
+
+# Write the aggregated data to a CSV file
+write.csv(agg_df, file = output_file, row.names = FALSE)
+}
+done
+
+echo "Variant extraction complete."
 ```
