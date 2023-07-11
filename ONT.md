@@ -1425,35 +1425,34 @@ rm(list = ls())
 # Set the input directory where the sample directories are located
 input_dir <- "./results/extracted_variants"
 
-
-# Get a list of all sample files in the input directory
-file_list <- list.files(input_dir, full.names=TRUE)
+# Get a list of all sample directories in the input directory
+file_list <- list.files(input_dir, pattern = "\\.snpsift\\.txt", full.names = TRUE)
 
 # Create an empty data frame to store the aggregated data
 agg_df <- data.frame()
 
-  # Loop over each annotated result file
-  for (file in file_list) {
-    # Read the annotated data from the file
-    annotated_data <- read.delim(file, sep = "\t", header = TRUE)
+# Loop over each annotated result file
+for (file in file_list) {
+  # Read the annotated data from the file
+  annotated_data <- read.delim(file, sep = "\t", header = TRUE)
 
-    # Skip sample if no annotated data was found
-    if (nrow(annotated_data) == 0) {
-      next
-    }
-
-    # Extract the sample name from the file path
-    sample_name <- tools::file_path_sans_ext(basename(file))
-
-    # Add the sample name as a column in the data frame
-    annotated_data$sample_name <- sample_name
-
-    # Append the data to the aggregated data frame
-    agg_df <- rbind(agg_df, annotated_data)
+  # Skip sample if no annotated data was found
+  if (nrow(annotated_data) == 0) {
+    next
   }
 
+  # Extract the sample name from the file path
+  sample_name <- sub("\\.snpsift\\.txt$", "", basename(file))
+
+  # Add the sample name as a column in the data frame
+  annotated_data$sample_name <- sample_name
+
+  # Append the data to the aggregated data frame
+  agg_df <- rbind(agg_df, annotated_data)
+}
+
 # Set the output file name
-output_file <- paste0("combined_annotated_data.csv")
+output_file <- "combined_annotated_data.csv"
 
 # Check if the aggregated data frame is empty
 if (nrow(agg_df) > 0) {
