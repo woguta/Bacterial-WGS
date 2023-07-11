@@ -1410,62 +1410,57 @@ echo "SnpSift variant extraction complete"
 c) Extract the snpSift text variant results by R
 
 ```
-#!usr/bin/bashrc -l
+#!/usr/bin/Rscript
 
-#load neccessary modules
+# Load necessary modules
 module purge
 module load R/4.3
 
-#open r console/studio in the terminal
+# Open R console/studio in the terminal
 R
 
+# Remove all objects saved in R workspace
+rm(list = ls())
+
 # Set the input directory where the sample directories are located
-input_dir <- "./extracted_variants"
+input_dir <- "./results/extracted_variants"
 
-# Get a list of all sample directories in the input directory
-sample_dirs <- list.dirs(input_dir, recursive = FALSE)
 
-# create a vector of available extracted results
-annotated_data_type <- c("txt")
-
-for annotated_data_type {
+# Get a list of all sample files in the input directory
+file_list <- list.files(input_dir, full.names=TRUE)
 
 # Create an empty data frame to store the aggregated data
 agg_df <- data.frame()
 
-# Loop over each sample directory
-for (sample_dir in sample_dirs) {
-  # Get a list of all annotated result files in the current sample directory
-  file_list <- list.files(path = sample_dir, pattern = paste0("snpsift.txt"), full.names = TRUE)
-
   # Loop over each annotated result file
   for (file in file_list) {
     # Read the annotated data from the file
-    annotated_data <- read.delim(file, sep = "\t")
-	
-	# skip sample if no annotated data was found
-	if (nrow(annotated_data) == 0) {
-	next
-	}
+    annotated_data <- read.delim(file, sep = "\t", header = TRUE)
+
+    # Skip sample if no annotated data was found
+    if (nrow(annotated_data) == 0) {
+      next
+    }
 
     # Extract the sample name from the file path
-    sample_name <- tools::file_path_sans_ext(basename(sample_dir))
+    sample_name <- tools::file_path_sans_ext(basename(file))
 
     # Add the sample name as a column in the data frame
-    annoatated_data$sample_name <- sample_name
+    annotated_data$sample_name <- sample_name
 
     # Append the data to the aggregated data frame
     agg_df <- rbind(agg_df, annotated_data)
   }
-}
 
 # Set the output file name
 output_file <- paste0("combined_annotated_data.csv")
 
-# Write the aggregated data to a CSV file
-write.csv(agg_df, file = output_file, row.names = FALSE)
+# Check if the aggregated data frame is empty
+if (nrow(agg_df) > 0) {
+  # Write the aggregated data to a CSV file
+  write.csv(agg_df, file = output_file, row.names = FALSE)
+  cat("Variant extraction complete. Data saved to:", output_file, "\n")
+} else {
+  cat("No data extracted. Output file not created.\n")
 }
-done
-
-echo "Variant extraction complete."
 ```
