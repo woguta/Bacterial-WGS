@@ -1976,3 +1976,53 @@ if (nrow(agg_df) > 0) {
   cat("No data extracted. Output file not created.\n")
 }
 ```
+
+15 Phylogenetic tree construction
+
+i) From DNA, Use contigs.fasta or scaffolds...tools - muscle and iqtree
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Muscle_Iqtree
+#SBATCH -n 8
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Load modules
+module purge
+module load iqtree/2.2.0
+module load muscle/3.8.1551
+
+# Input and Output file paths
+input_dir="./results/spades"
+output_alignment="./results/muscle"
+output_tree="./results/iqtree"
+
+# Make directories
+mkdir -p "${output_alignment}"
+mkdir -p "${output_tree}"
+
+# Run Muscle and Sequence alignment
+echo "Perform multiple sequence alignment using MUSCLE..."
+for sample_dir in "${input_dir}"/*; do
+    sample_name=$(basename "${sample_dir}")
+    input_fasta="${sample_dir}/contigs.fasta"
+    echo "Processing ${sample_name}: ${input_fasta}"
+    muscle_exe="muscle"
+    $muscle_exe -in $input_fasta -out "${output_alignment}/${sample_name}_aligned.fasta"
+done
+
+# Concatenate aligned sequences into a single alignment file
+cat "${output_alignment}"/*.fasta > "${output_alignment}/output_alignment.fasta"
+
+# Run IQ-TREE on the aligned sequences
+echo "Performing Phylogenetic tree construction..."
+iqtree_exe="iqtree"
+model="GTR+G"  # Adjust the model as needed (e.g., WAG for protein data)
+num_threads=8  # Number of threads to use for IQ-TREE
+$iqtree_exe -s "${output_alignment}/output_alignment.fasta" -m $model -B 1000 -alrt 1000 -nt $num_threads -pre "${output_tree}/tree_output"
+
+# Move the output tree file to the specified location
+mv "${output_tree}/tree_output.treefile" "${output_tree}/output_tree.newick"
+```
