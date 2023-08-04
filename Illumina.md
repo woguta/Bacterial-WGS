@@ -1981,9 +1981,9 @@ if (nrow(agg_df) > 0) {
 
 i) From DNA, Use contigs.fasta or scaffolds...tools - muscle and iqtree
 ```
-#!/usr/bin/bash -l
+#!/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J Muscle_Iqtree
+#SBATCH -J CPPA_Mu&Iqt
 #SBATCH -n 8
 
 # Exit immediately if a command exits with a non-zero status
@@ -1996,33 +1996,46 @@ module load muscle/3.8.1551
 
 # Input and Output file paths
 input_dir="./results/spades"
-output_alignment="./results/muscle"
-output_tree="./results/iqtree"
+output_alignment="./results/muscleiqtree"
 
 # Make directories
 mkdir -p "${output_alignment}"
-mkdir -p "${output_tree}"
 
-# Run Muscle and Sequence alignment
-echo "Perform multiple sequence alignment using MUSCLE..."
-for sample_dir in "${input_dir}"/*; do
-    sample_name=$(basename "${sample_dir}")
-    input_fasta="${sample_dir}/contigs.fasta"
-    echo "Processing ${sample_name}: ${input_fasta}"
-    muscle_exe="muscle"
-    $muscle_exe -in $input_fasta -out "${output_alignment}/${sample_name}_aligned.fasta"
+# Define CPPA samples to run
+cppa_samples=("AS_26335_C1" "AS_26342_C1" "AS_26361_C1" "AS_26472_C1" "AS_26510_C1"
+              "AS_26522_C1" "AS_26532_C1" "AS_27516_C1" "AS_27566_C1" "AS_27660_C1"
+              "AS_27685_C1" "AS_27712_C1" "AS_27771_C1" "AS_27909_C1" "AS_27977_C1"
+              "AS_6058_C1" "AS_6466_C1" "AS_6479_C1" "AS_6724_C1" "AS_6771_C2"
+              "CS_25233_C1" "CS_26489_C1" "CS_26901_C1" "CS_26986_C1" "CS_27092_C1"
+              "CS_5572_C1" "CS_5613_C2" "CS_5695_C2" "CS_5716_C1")
+
+echo "CPPA samples: ${cppa_samples[@]}"
+
+# Create a file with sample names in the desired order (one name per line)
+sample_names_file="sample_names.txt"
+echo "${cppa_samples[@]}" > "${sample_names_file}"
+
+# Concatenate all sequences with headers into a single alignment file
+echo "Concatenating fasta sequences..."
+for sample_name in "${cppa_samples[@]}"; do
+    input_fasta="${input_dir}/${sample_name}/contigs.fasta"
+
+    # Add sample name as a header to the sequence
+    echo ">${sample_name}" > "${output_alignment}/${sample_name}_header.fasta"
+    cat "$input_fasta" >> "${output_alignment}/${sample_name}_header.fasta"
 done
+cat "${output_alignment}"/*_header.fasta > "${output_alignment}/seqs_aligned.fasta"
+echo "Concatenating fasta sequences completed."
 
-# Concatenate aligned sequences into a single alignment file
-cat "${output_alignment}"/*.fasta > "${output_alignment}/output_alignment.fasta"
+# Run Muscle and Sequence alignment on the concatenated sequences
+echo "Performing multiple sequence alignment using muscle..."
+muscle_exe="muscle"
+$muscle_exe -in "${output_alignment}/seqs_aligned.fasta" -out "${output_alignment}/muscle_aligned.fasta" -maxiters 3
+echo "MUSCLE alignment for concatenated sequences completed."
 
 # Run IQ-TREE on the aligned sequences
 echo "Performing Phylogenetic tree construction..."
 iqtree_exe="iqtree"
-model="GTR+G"  # Adjust the model as needed (e.g., WAG for protein data)
-num_threads=8  # Number of threads to use for IQ-TREE
-$iqtree_exe -s "${output_alignment}/output_alignment.fasta" -m $model -B 1000 -alrt 1000 -nt $num_threads -pre "${output_tree}/tree_output"
-
-# Move the output tree file to the specified location
-mv "${output_tree}/tree_output.treefile" "${output_tree}/output_tree.newick"
+$iqtree_exe -s "${output_alignment}/muscle_aligned.fasta" -m GTR+I+G -asr -B 1000 -alrt 1000 -rf_all tree_set -alninfo -T 8
+echo "IQ-TREE analysis completed."
 ```
