@@ -1979,11 +1979,116 @@ if (nrow(agg_df) > 0) {
 
 15 Phylogenetic tree construction
 
-i) From DNA, Use contigs.fasta or scaffolds...tools - muscle and iqtree
+i) From DNA, Use trim.fastq.gz files and run snippy to for core.aln and full.core.aln for making tree
+```
+#!/bin/bash -l
+#SBATCH --partition=batch
+#SBATCH --cpus-per-task=8
+#SBATCH --output=output_%j.txt
+#SBATCH --error=error_output_%j.txt
+#SBATCH --job-name=CPPA_snippy
+
+# load required modules
+module purge
+module load perl/5.22.3
+module load snippy/4.6.0
+module load python/3.8
+
+# download the reference sequence
+WORK_DIR="/var/scratch/${USER}/bacteria-wgs/crpa_illumina/data/"
+REF_DIR="${WORK_DIR}/genome_ref"
+
+if [ ! -e ${REF_DIR} ]; then
+  mkdir -p ${REF_DIR}
+fi
+
+reference="${REF_DIR}/ASM676v1.fasta"
+
+if [ ! -f ${reference} ]; then
+  wget -c -P ${REF_DIR} https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_ASM676v1/GCF_000006765.1_ASM676v1_genomic.fna.gz
+
+  # decompress and rename the file
+  gunzip -c ${REF_DIR}/GCF_000006765.1_ASM676v1_genomic.fna.gz > ${reference}
+fi
+
+# Run snippy
+
+# Directories path
+DATA_DIR="${WORK_DIR}/results/fastp"
+OUT_DIR="${WORK_DIR}/results/snippy"
+
+# Make directories
+if [ ! -e "${OUT_DIR}" ]; then
+  mkdir -p "${OUT_DIR}"
+fi
+
+# Define CPPA samples to run #include all the samples...
+cppa_samples=("AS_26335_C1" "AS_26342_C1" "AS_26361_C1"
+              "AS_26522_C1" "AS_26532_C1" "AS_27516_C1")
+
+echo "CPPA samples: ${cppa_samples[@]}"
+for sample in "${cppa_samples[@]}"; do
+    R1="${DATA_DIR}/${sample}.R1.trim.fastq.gz"
+    echo "${sample}"
+    R2="${DATA_DIR}/${sample}.R2.trim.fastq.gz"
+
+    # create output directory for every sample
+    OUT="${OUT_DIR}/${sample}"
+
+    if [ ! -e "${OUT}" ]; then
+        mkdir -p "${OUT}"
+    fi
+
+    vcf="${OUT}/${sample}.vcf"
+    bed="${OUT}/${sample}.bed"
+    gff="${OUT}/${sample}.gff"
+    csv="${OUT}/${sample}.csv"
+    html="${OUT}/${sample}.html"
+
+    if [ ! -f "${vcf}" ] && [ ! -f "${bed}" ] && [ ! -f "${gff}" ] && [ ! -f "${csv}" ] && [ ! -f "${html}" ]; then
+        echo -e "Calling variants on sample:\t${sample}. forward: ${R1} and reverse: ${R2}"
+        snippy \
+            --cpus 8 \
+            --ram 8 \
+            --prefix "${sample}" \
+            --cleanup \
+            --mapqual 60 \
+            --basequal 15 \
+            --mincov 10 \
+            --force \
+            --outdir "${OUT}" \
+            --ref "${reference}" \
+            --R1 "${R1}" \
+            --R2 "${R2}"
+    fi
+done
+
+# run snippy-core
+dirs=()
+for d in "${OUT_DIR}"/*; do
+    if [ -d "${d}" ] && [ "${d}" != 'reference' ]; then
+        dirs+=("${d}")
+    fi
+done
+
+DIRS=$(printf '%s ' "${dirs[@]}")
+echo "${DIRS}"
+
+OUT_DIR="${WORK_DIR}/results/snippy-core"
+
+if [ ! -e "${OUT_DIR}" ]; then
+    mkdir -p "${OUT_DIR}"
+fi
+
+cd "${OUT_DIR}"
+echo -e "Running snippy-core"
+snippy-core --ref "${reference}" --prefix core ${DIRS}
+```
+ii) Now run iqtree with specific thresholds
 ```
 #!/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J CPPA_Mu&Iqt
+#SBATCH -J CPPA_Iqtree
 #SBATCH -n 8
 
 # Exit immediately if a command exits with a non-zero status
@@ -1992,50 +2097,25 @@ set -e
 # Load modules
 module purge
 module load iqtree/2.2.0
-module load muscle/3.8.1551
 
 # Input and Output file paths
-input_dir="./results/spades"
-output_alignment="./results/muscleiqtree"
+WORK_DIR="/var/scratch/${USER}/bacteria-wgs/crpa_illumina/data"
+input_dir="${WORK_DIR}/results/snippy-core"
+output_iqtree="${WORK_DIR}/results/iqtree"
 
 # Make directories
-mkdir -p "${output_alignment}"
+mkdir -p "${output_iqtree}"
 
-# Define CPPA samples to run
-cppa_samples=("AS_26335_C1" "AS_26342_C1" "AS_26361_C1" "AS_26472_C1" "AS_26510_C1"
-              "AS_26522_C1" "AS_26532_C1" "AS_27516_C1" "AS_27566_C1" "AS_27660_C1"
-              "AS_27685_C1" "AS_27712_C1" "AS_27771_C1" "AS_27909_C1" "AS_27977_C1"
-              "AS_6058_C1" "AS_6466_C1" "AS_6479_C1" "AS_6724_C1" "AS_6771_C2"
-              "CS_25233_C1" "CS_26489_C1" "CS_26901_C1" "CS_26986_C1" "CS_27092_C1"
-              "CS_5572_C1" "CS_5613_C2" "CS_5695_C2" "CS_5716_C1")
+# Run IQ-TREE on the core.aln sequence alignment
+aligned_fasta_core="${input_dir}/core.aln"
+echo "Performing Phylogenetic tree construction on core.aligned.fasta..."
+iqtree_exe="/export/apps/iqtree/2.2.0/bin/iqtree2"
+$iqtree_exe -s "${aligned_fasta_core}" -m GTR+I+G -asr -B 1000 -alrt 1000 -pre "${output_iqtree}/tree_core" -alninfo -T 8
+echo "IQ-TREE analysis on core.aln completed."
 
-echo "CPPA samples: ${cppa_samples[@]}"
-
-# Create a file with sample names in the desired order (one name per line)
-sample_names_file="sample_names.txt"
-echo "${cppa_samples[@]}" > "${sample_names_file}"
-
-# Concatenate all sequences with headers into a single alignment file
-echo "Concatenating fasta sequences..."
-for sample_name in "${cppa_samples[@]}"; do
-    input_fasta="${input_dir}/${sample_name}/contigs.fasta"
-
-    # Add sample name as a header to the sequence
-    echo ">${sample_name}" > "${output_alignment}/${sample_name}_header.fasta"
-    cat "$input_fasta" >> "${output_alignment}/${sample_name}_header.fasta"
-done
-cat "${output_alignment}"/*_header.fasta > "${output_alignment}/seqs_aligned.fasta"
-echo "Concatenating fasta sequences completed."
-
-# Run Muscle and Sequence alignment on the concatenated sequences
-echo "Performing multiple sequence alignment using muscle..."
-muscle_exe="muscle"
-$muscle_exe -in "${output_alignment}/seqs_aligned.fasta" -out "${output_alignment}/muscle_aligned.fasta" -maxiters 3
-echo "MUSCLE alignment for concatenated sequences completed."
-
-# Run IQ-TREE on the aligned sequences
-echo "Performing Phylogenetic tree construction..."
-iqtree_exe="iqtree"
-$iqtree_exe -s "${output_alignment}/muscle_aligned.fasta" -m GTR+I+G -asr -B 1000 -alrt 1000 -rf_all tree_set -alninfo -T 8
-echo "IQ-TREE analysis completed."
+# Run IQ-TREE on the core.full.aln sequence alignment
+aligned_fasta_full="${input_dir}/core.full.aln"
+echo "Performing Phylogenetic tree construction on core.full.aligned.fasta..."
+$iqtree_exe -s "${aligned_fasta_full}" -m GTR+I+G -asr -B 1000 -alrt 1000 -pre "${output_iqtree}/tree_full" -alninfo -T 8
+echo "IQ-TREE analysis on core.full.aln completed."
 ```
