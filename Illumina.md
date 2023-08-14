@@ -274,7 +274,7 @@ Save and run
 ```
  sbatch -w compute06 run_fastp1.sh
 ```
-iii) Second pathway sbatch - sunmitiing jobs to the cluster as you do other things (the best option)
+iii) Second pathway sbatch - submitting jobs to the cluster as you do other things (the best option)
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
@@ -369,7 +369,67 @@ run the job as saved
 ```
 sbatch -w compute06 run_fastqc_trim.sh
 ```
-9. De-novo Genome Assembly using SPAdes for the trimmed files
+
+Subsampling the reads in fastp_dir
+```
+#!/usr/bin/bash -l
+#SBATCH --partition=batch
+#SBATCH --cpus-per-task=4
+#SBATCH --output=output_%j.txt
+#SBATCH --error=error_output_%j.txt
+#SBATCH --job-name=Cppa_Seqtk
+
+module purge
+module load seqtk/1.3
+
+# Set the absolute path and input and output directories
+WORK_DIR="/var/scratch/${USER}/bacteria-wgs/crpa_illumina/data/"
+FASTP_DIR="${WORK_DIR}/results/fastp"
+OUTPUT_DIR="${WORK_DIR}/results/seqtk_output"
+
+# Make output directory
+if [ ! -e ${OUTPUT_DIR} ]; then
+  mkdir -p ${OUTPUT_DIR}
+fi
+
+# Define CPPA samples to run
+cppa_samples=("AS_26335_C1" "AS_26342_C1" "AS_26361_C1" "AS_26472_C1" "AS_26510_C1"
+              "AS_26522_C1" "AS_26532_C1" "AS_27516_C1" "AS_27566_C1" "AS_27660_C1"
+              "AS_27685_C1" "AS_27712_C1" "AS_27771_C1" "AS_27909_C1" "AS_27977_C1"
+              "AS_6058_C1" "AS_6466_C1" "AS_6479_C1" "AS_6724_C1" "AS_6771_C2"
+              "CS_25233_C1" "CS_26489_C1" "CS_26901_C1" "CS_26986_C1" "CS_27092_C1"
+              "CS_5572_C1" "CS_5613_C2" "CS_5695_C2" "CS_5716_C1")
+
+echo "CPPA samples: ${cppa_samples[@]}"
+
+# Initialize the output file for read counts
+OUTPUT_FILE="${OUTPUT_DIR}/read_counts.txt"
+echo "Sample R1_Count R2_Count" > "$OUTPUT_FILE"
+
+for sample in "${cppa_samples[@]}"; do
+    R1_FILE="${FASTP_DIR}/${sample}.R1.trim.fastq.gz"
+    echo "${sample}"
+    R2_FILE="${FASTP_DIR}/${sample}.R2.trim.fastq.gz"
+
+    # Count the Reads
+    R1_Count=$(zcat "$R1_FILE" | echo $((`wc -l` / 4)))
+    R2_Count=$(zcat "$R2_FILE" | echo $((`wc -l` / 4)))
+
+    # Append the counts to the output file
+    echo "$sample $R1_Count $R2_Count" >> "$OUTPUT_FILE"
+
+    # Calculate the means of the reads from all R1 read counts to a mean_reads.txt file
+    awk '{ sum += $2 } END { print sum / NR }' "$OUTPUT_FILE" > "${OUTPUT_DIR}/mean_reads.txt"
+
+    # Subset samples
+    seqtk sample -s100 "$R1_FILE" 100000 > "${OUTPUT_DIR}/${sample}_subsampled_R1_100000.fastq"
+    seqtk sample -s100 "$R2_FILE" 100000 > "${OUTPUT_DIR}/${sample}_subsampled_R2_100000.fastq"
+    zcat "$R1_FILE" | seqtk sample -s100 - 0.9 > "${OUTPUT_DIR}/${sample}_subsampled_R1_90percent.fastq"
+    zcat "$R2_FILE" | seqtk sample -s100 - 0.9 > "${OUTPUT_DIR}/${sample}_subsampled_R2_90percent.fastq"
+done
+```
+
+9. De-novo Genome Assembly using SPAdes for the trimmed files in fastp_dir
 
 i) for one sample
 ```
@@ -634,6 +694,76 @@ done
 ```
 
 Plasmid data extraction R scripts
+```
+#!/usr/bin/Rscript
+
+# Load necessary modules
+module purge
+module load R/4.3.1
+
+# Open R console/studio in the terminal
+R
+
+# Remove all objects saved in R workspace
+rm(list = ls())
+
+# Set the input directory where the sample directories are located
+input_dir <- "./NO_GROUP"
+
+# Get a list of all sample directories in the input directory
+sample_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# Create an empty data frame to store the aggregated data
+agg_df <- data.frame()
+
+# Loop over each sample directory
+for (sample_dir in sample_dirs) {
+  # Get a list of all plasmid result files in the current sample directory
+  file_list <- list.files(sample_dir, pattern = "_final_results\\.tab", ful$
+
+  # Loop over each plasmid result file
+  for (file in file_list) {
+    # Print the file being processed for debugging
+    cat("Processing file:", file, "\n")
+
+    # Read the plasmid data from the file
+    plasmid_data <- read.delim(file, sep = "\t", header = TRUE)
+
+    # Skip sample if no plasmid data was found
+    if (nrow(plasmid_data) == 0) {
+      cat("No plasmid data found in file:", file, "\n")
+      next
+    }
+
+    # Extract the sample name from the file path
+    sample_name <- sub("_final_results\\.tab$", "", basename(file))
+
+    # Print the extracted sample name for debugging
+    cat("Sample name:", sample_name, "\n")
+
+    # Add the sample name as a column in the data frame
+    plasmid_data$sample_name <- sample_name
+
+    # Print the number of rows in the annotated data for debugging
+    cat("Number of rows in plasmid data:", nrow(plasmid_data), "\n")
+
+    # Append the data to the aggregated data frame
+    agg_df <- rbind(agg_df, plasmid_data)
+  }
+}
+
+# Set the output file name
+output_file <- paste0("combined_plasmid_data.csv")
+
+# Check if the aggregated data frame is empty
+if (nrow(agg_df) > 0) {
+  # Write the aggregated data to a CSV file
+  write.csv(agg_df, file = output_file, row.names = FALSE)
+  cat("Variant extraction complete. Data saved to:", output_file, "\n")
+} else {
+  cat("No data extracted. Output file not created.\n")
+}
+```
 
 11.Genome Assessment [input file contigs.fasta)
 
