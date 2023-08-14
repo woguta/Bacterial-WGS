@@ -404,7 +404,8 @@ echo "CPPA samples: ${cppa_samples[@]}"
 
 # Initialize the output file for read counts
 OUTPUT_FILE="${OUTPUT_DIR}/read_counts.txt"
-echo "Sample R1_Count R2_Count" > "$OUTPUT_FILE"
+CSV_OUTPUT_FILE="${OUTPUT_DIR}/read_counts.csv"
+echo "Sample,R1_Count,R2_Count" > "$CSV_OUTPUT_FILE"
 
 for sample in "${cppa_samples[@]}"; do
     R1_FILE="${FASTP_DIR}/${sample}.R1.trim.fastq.gz"
@@ -415,11 +416,11 @@ for sample in "${cppa_samples[@]}"; do
     R1_Count=$(zcat "$R1_FILE" | echo $((`wc -l` / 4)))
     R2_Count=$(zcat "$R2_FILE" | echo $((`wc -l` / 4)))
 
-    # Append the counts to the output file
-    echo "$sample $R1_Count $R2_Count" >> "$OUTPUT_FILE"
+    # Append the counts to the CSV output file
+    echo "$sample,$R1_Count,$R2_Count" >> "$CSV_OUTPUT_FILE"
 
     # Calculate the means of the reads from all R1 read counts to a mean_reads.txt file
-    awk '{ sum += $2 } END { print sum / NR }' "$OUTPUT_FILE" > "${OUTPUT_DIR}/mean_reads.txt"
+    awk '{ sum += $2 } END { print sum / NR }' "$CSV_OUTPUT_FILE" > "${OUTPUT_DIR}/mean_reads.txt"
 
     # Subset samples
     seqtk sample -s100 "$R1_FILE" 100000 > "${OUTPUT_DIR}/${sample}_subsampled_R1_100000.fastq"
@@ -427,6 +428,10 @@ for sample in "${cppa_samples[@]}"; do
     zcat "$R1_FILE" | seqtk sample -s100 - 0.9 > "${OUTPUT_DIR}/${sample}_subsampled_R1_90percent.fastq"
     zcat "$R2_FILE" | seqtk sample -s100 - 0.9 > "${OUTPUT_DIR}/${sample}_subsampled_R2_90percent.fastq"
 done
+
+# Gzip the FASTQ files in the seqtk_output directory
+gzip "${OUTPUT_DIR}"/*.fastq
+
 ```
 
 9. De-novo Genome Assembly using SPAdes for the trimmed files in fastp_dir
