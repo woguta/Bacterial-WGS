@@ -392,13 +392,8 @@ if [ ! -e ${OUTPUT_DIR} ]; then
   mkdir -p ${OUTPUT_DIR}
 fi
 
-# Define CPPA samples to run
-cppa_samples=("AS_26335_C1" "AS_26342_C1" "AS_26361_C1" "AS_26472_C1" "AS_26510_C1"
-              "AS_26522_C1" "AS_26532_C1" "AS_27516_C1" "AS_27566_C1" "AS_27660_C1"
-              "AS_27685_C1" "AS_27712_C1" "AS_27771_C1" "AS_27909_C1" "AS_27977_C1"
-              "AS_6058_C1" "AS_6466_C1" "AS_6479_C1" "AS_6724_C1" "AS_6771_C2"
-              "CS_25233_C1" "CS_26489_C1" "CS_26901_C1" "CS_26986_C1" "CS_27092_C1"
-              "CS_5572_C1" "CS_5613_C2" "CS_5695_C2" "CS_5716_C1")
+# Define CPPA samples to run #(put all samples of interest)
+cppa_samples=("AS_26335_C1" "AS_26342_C1" "AS_26361_C1")
 
 echo "CPPA samples: ${cppa_samples[@]}"
 
@@ -422,9 +417,9 @@ for sample in "${cppa_samples[@]}"; do
     # Calculate the means of the reads from all R1 read counts to a mean_reads.txt file
     awk '{ sum += $2 } END { print sum / NR }' "$CSV_OUTPUT_FILE" > "${OUTPUT_DIR}/mean_reads.txt"
 
-    # Subset samples
-    seqtk sample -s100 "$R1_FILE" 100000 > "${OUTPUT_DIR}/${sample}_subsampled_R1_100000.fastq"
-    seqtk sample -s100 "$R2_FILE" 100000 > "${OUTPUT_DIR}/${sample}_subsampled_R2_100000.fastq"
+    # Subset samples by 200,000 reads and 90% of the reads
+    seqtk sample -s100 "$R1_FILE" 200000 > "${OUTPUT_DIR}/${sample}_subsampled_R1_200000.fastq"
+    seqtk sample -s100 "$R2_FILE" 200000 > "${OUTPUT_DIR}/${sample}_subsampled_R2_200000.fastq"
     zcat "$R1_FILE" | seqtk sample -s100 - 0.9 > "${OUTPUT_DIR}/${sample}_subsampled_R1_90percent.fastq"
     zcat "$R2_FILE" | seqtk sample -s100 - 0.9 > "${OUTPUT_DIR}/${sample}_subsampled_R2_90percent.fastq"
 done
