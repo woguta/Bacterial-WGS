@@ -2249,3 +2249,85 @@ echo "Performing Phylogenetic tree construction on core.full.aligned.fasta..."
 $iqtree_exe -s "${aligned_fasta_full}" -m GTR+I+G -asr -B 1000 -alrt 1000 -pre "${output_iqtree}/tree_full" -alninfo -T 8
 echo "IQ-TREE analysis on core.full.aln completed."
 ```
+16 Extracting aligned AMR genes snps using snipit
+
+i) per alignmenet.fasta
+```
+ snipit alignment_file.fasta --write-snps --size-option scale --sort-by-mutation-number --solid-background --flip-vertical --show-indels -c classic -f pdf
+```
+ii) For all the files at once
+```
+#!/usr/bin/bash -l
+#SBATCH --job-name=snipit_job
+#SBATCH --partition=partition_name
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=8G
+#SBATCH --output=snipit_output.log
+
+# Define directories
+WORK_DIR="/home/woguta"
+INPUT_DIR="${WORK_DIR}/fastafiles"
+OUTPUT_DIR="${WORK_DIR}/snipit_output"
+mkdir -p "$OUTPUT_DIR"
+echo "WORK_DIR: ${WORK_DIR}"
+echo "INPUT_DIR: ${INPUT_DIR}"
+echo "OUTPUT_DIR: ${OUTPUT_DIR}"
+
+# Path to the snipit executable
+SNIPIT_EXECUTABLE="${WORK_DIR}/miniconda3/lib/python3.10/site-packages/snipit/command.py"
+echo "SNIPIT_EXECUTABLE: ${SNIPIT_EXECUTABLE}"
+
+# Activate the Conda environment
+echo "CONDA_ENV: ${CONDA_ENV}"
+source "${CONDA_ENV}/bin/activate"
+
+# Debug: Verify the Conda environment is activated
+conda info --envs
+
+# Debug: Print a separator
+echo "--------------------------------"
+
+# Loop through input files in the INPUT_DIR
+for file in "${INPUT_DIR}"/*_aligned.fa; do
+  # Extract the base filename without the path and extension
+  base_name=$(basename "$file" _aligned.fa)
+
+  # Input alignment file
+  ALIGNMENT_FILE="$file"
+
+  # Output file name stem
+  OUTPUT_FILE="${OUTPUT_DIR}/${base_name}"
+
+  # Run snipit
+  echo "Running snipit for ${base_name}: ${ALIGNMENT_FILE}"
+  snipit ${ALIGNMENT_FILE} \
+         -d ${OUTPUT_DIR} \
+         -o ${OUTPUT_FILE} \
+         --write-snps ${base_name} \
+         --size-option scale \
+         --sort-by-mutation-number \
+         --solid-background \
+         --flip-vertical \
+         --show-indels \
+         -c classic \
+         -f pdf
+
+  # Check if snipit was successful
+  if [ $? -eq 0 ]; then
+    echo "snipit completed successfully for file: ${ALIGNMENT_FILE}"
+  else
+    echo "snipit failed with an error for file: ${ALIGNMENT_FILE}"
+  fi
+
+  # Debug: Print a separator
+  echo "--------------------------------"
+done
+
+# Debug: Print a message after all runs have completed
+echo "All runs have completed."
+
+# Deactivate the Conda environment
+conda deactivate
+```
