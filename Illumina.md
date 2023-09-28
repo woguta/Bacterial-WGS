@@ -2412,6 +2412,9 @@ echo "Concatenation for all samples is complete!"
 ii) using R, R script
 
 ```
+install.packages("data.table")
+load library(data.table)
+
 # Set your working directory
 WORK_DIR <- "/var/scratch/woguta/bacteria-wgs/crpa_illumina/data"
 PLASMIDS_DIR <- file.path(WORK_DIR, "NO_GROUP")
