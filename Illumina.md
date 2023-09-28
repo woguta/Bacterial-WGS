@@ -2251,7 +2251,7 @@ echo "IQ-TREE analysis on core.full.aln completed."
 ```
 16 Extracting aligned AMR genes snps using snipit
 
-i) per alignmenet.fasta
+i) per alignmenet.fasta . Sometimes the --size-option scale gives an error, change scale to expand
 ```
  snipit alignment_file.fasta --write-snps --size-option scale --sort-by-mutation-number --solid-background --flip-vertical --show-indels -c classic -f pdf
 ```
@@ -2330,4 +2330,95 @@ echo "All runs have completed."
 
 # Deactivate the Conda environment
 conda deactivate
+```
+17. Concantenating/Extracting plasmid fasta files identified using plasmdID
+
+```
+# Set your working directory
+WORK_DIR <- "/var/scratch/woguta/bacteria-wgs/crpa_illumina/data"
+PLASMIDS_DIR <- file.path(WORK_DIR, "NO_GROUP")
+OUTPUT_DIR <- file.path(WORK_DIR, "results/cppa_files")
+
+# List all sample directories
+sample_dirs <- list.dirs(PLASMIDS_DIR, full.names = TRUE, recursive = FALSE)
+
+# Function to sanitize strings for filenames
+sanitize_filename <- function(text) {
+  gsub(" ", "_", text)
+}
+
+# Loop through sample directories
+for (sample_dir in sample_dirs) {
+  sample_name <- basename(sample_dir)
+
+  cat("Processing sample: ", sample_name, "\n")
+
+  OUT <- file.path(OUTPUT_DIR, sample_name)
+  dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
+
+  # Path to plasmid results tab files
+  plasmid_results_file <- file.path(PLASMIDS_DIR, sample_name, paste0(sample_name, "_final_results.tab"))
+
+  if (!file.exists(plasmid_results_file)) {
+    cat("Error: ", plasmid_results_file, " not found!\n")
+    next
+  }
+
+  cat("Found plasmid results file: ", plasmid_results_file, "\n")
+
+  # Read the tab-delimited file using data.table
+  library(data.table)
+  plasmid_data <- fread(plasmid_results_file, header = TRUE, sep = "\t", quote = "")
+
+  # Loop through rows and extract columns
+  for (i in 1:nrow(plasmid_data)) {
+    plasmid_id <- plasmid_data[i, 1]
+    plasmid_description <- plasmid_data[i, 4]
+    plasmid_fraction_covered <- plasmid_data[i, 5]
+
+    sanitized_description <- sanitize_filename(plasmid_description)
+    sanitized_fraction_covered <- sanitize_filename(plasmid_fraction_covered)
+
+    plasmid_id_description <- paste0(plasmid_id, "_", sanitized_description, "_", sanitized_fraction_covered)
+
+    cat("Plasmid ID: ", plasmid_id, "\n")
+    cat("Plasmid Description: ", plasmid_description, "\n")
+    cat("Plasmid Fraction Covered: ", plasmid_fraction_covered, "\n")
+    cat("Plasmid ID Description: ", plasmid_id_description, "\n")
+
+    # Path to plasmid fasta files
+    plasmid_files_dir <- file.path(sample_dir, "fasta_files")
+
+    if (!dir.exists(plasmid_files_dir)) {
+      cat("Error: ", plasmid_files_dir, " not found!\n")
+      next
+    }
+
+    cat("Found plasmid files directory: ", plasmid_files_dir, "\n")
+
+    # Loop through plasmid FASTA files
+    fasta_files <- list.files(plasmid_files_dir, pattern = "_term.fasta", full.names = TRUE)
+
+    for (plasmid_file in fasta_files) {
+      plasmid_id <- sub("_term.fasta", "", basename(plasmid_file))
+      plasmid_fasta <- file.path(plasmid_files_dir, paste0(plasmid_id, "_term.fasta"))
+
+      cat("Processing plasmid: ", plasmid_id, "\n")
+
+      # Use sanitized descriptions in the filename
+      cat_plasmid_fasta <- file.path(OUT, paste0(sample_name, "_", plasmid_id, "_", sanitized_description, "_", sanitized_fraction_covered, "_term.fasta"))
+
+      cat("Concatenating files for ", sample_name, ":\n")
+      cat("Plasmid fasta: ", plasmid_fasta, "\n")
+
+      # Run a system command to concatenate files (equivalent to 'cat' in Bash)
+      system(paste("cat", plasmid_fasta, ">", cat_plasmid_fasta))
+
+      cat("Concatenating is complete for ", sample_name, "\n")
+      cat("Concatenated plasmid fasta: ", cat_plasmid_fasta, "\n")
+    }
+  }
+}
+
+cat("Concatenation for all samples is complete!\n")
 ```
