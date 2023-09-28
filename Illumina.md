@@ -2333,11 +2333,90 @@ conda deactivate
 ```
 17. Concantenating/Extracting plasmid fasta files identified using plasmdID
 
+i) Using bash commandline
+```
+WORK_DIR="/var/scratch/woguta/bacteria-wgs/crpa_illumina/data"
+PLASMIDS_DIR="${WORK_DIR}/NO_GROUP"
+OUTPUT_DIR="${WORK_DIR}/results/plasmids_fasta"
+mkdir -p "${OUTPUT_DIR}"
+
+# Add a debug statement to check PLASMIDS_DIR
+echo "PLASMIDS_DIR: ${PLASMIDS_DIR}"
+
+for sample_dir in "${PLASMIDS_DIR}"/*; do
+  sample_name=$(basename "${sample_dir}")
+
+  echo "Processing sample: ${sample_name}"
+
+  OUT="${OUTPUT_DIR}/${sample_name}"
+  mkdir -p "${OUT}"
+  
+  # Path to plasmid results tab files
+  plasmid_results_file="${PLASMIDS_DIR}/${sample_name}/${sample_name}_final_results.tab"
+
+  if [ ! -f "${plasmid_results_file}" ]; then
+    echo "Error: ${plasmid_results_file} not found!"
+    continue
+  fi
+  
+  echo "Found plasmid results file: ${plasmid_results_file}"
+  
+  # Extract and concatenate the first column with its fourth column description
+  awk -F'\t' '{print $1 "\t" $4}' "${plasmid_results_file}" | while read -r plasmid_id plasmid_description; do
+    # Sanitize plasmid_description for use in filenames
+    sanitized_description="${plasmid_description// /_}"
+    sanitized_description="${sanitized_description//,/}"
+    
+    echo "Plasmid ID and its decription ${plasmid_id}: ${sanitized_description}"
+  
+    # Path to plasmid fasta files
+    plasmid_files_dir="${PLASMIDS_DIR}/${sample_name}/fasta_files"
+
+    if [ ! -d "${plasmid_files_dir}" ]; then
+      echo "Error: ${plasmid_files_dir} not found!"
+      continue
+    fi
+
+    echo "Found plasmid files directory: ${plasmid_files_dir}"
+
+    # Process and concatenate the plasmid fasta files with appropriate name tags
+    for plasmid_file in "${plasmid_files_dir}"/*_term.fasta; do
+      plasmid_fasta="${plasmid_files_dir}/${plasmid_id}_term.fasta"
+      
+      echo "Processing plasmid and its fasta file ${plasmid_id}: ${plasmid_fasta}"
+
+      # Check if the plasmid fasta file exists
+      if [ ! -f "${plasmid_fasta}" ]; then
+        echo "Error: Plasmid fasta file not found for ${plasmid_id}"
+        continue
+      fi
+
+      echo "Processing plasmid: ${plasmid_id}"
+
+      # Use sanitized descriptions in the filename
+      cat_plasmid_fasta="${OUT}/${sample_name}_${plasmid_id}_${sanitized_description}_term.fasta"
+
+      echo "Concatenating files for ${sample_name}:"
+      echo "Plasmid fasta: ${plasmid_fasta}"
+      cat "${plasmid_fasta}" > "${cat_plasmid_fasta}"
+
+      echo "Concatenating is complete for ${sample_name}"
+      echo "Concatenated plasmid fasta: ${cat_plasmid_fasta}"
+    done
+  done
+done
+
+echo "Concatenation for all samples is complete!"
+```
+ 
+ii) using R, R script
+
 ```
 # Set your working directory
 WORK_DIR <- "/var/scratch/woguta/bacteria-wgs/crpa_illumina/data"
 PLASMIDS_DIR <- file.path(WORK_DIR, "NO_GROUP")
-OUTPUT_DIR <- file.path(WORK_DIR, "results/cppa_files")
+OUTPUT_DIR <- file.path(WORK_DIR, "results/plasmid_fasta")
+dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 # List all sample directories
 sample_dirs <- list.dirs(PLASMIDS_DIR, full.names = TRUE, recursive = FALSE)
@@ -2345,6 +2424,7 @@ sample_dirs <- list.dirs(PLASMIDS_DIR, full.names = TRUE, recursive = FALSE)
 # Function to sanitize strings for filenames
 sanitize_filename <- function(text) {
   gsub(" ", "_", text)
+  gsub(",", "_", text)
 }
 
 # Loop through sample directories
@@ -2374,16 +2454,13 @@ for (sample_dir in sample_dirs) {
   for (i in 1:nrow(plasmid_data)) {
     plasmid_id <- plasmid_data[i, 1]
     plasmid_description <- plasmid_data[i, 4]
-    plasmid_fraction_covered <- plasmid_data[i, 5]
 
     sanitized_description <- sanitize_filename(plasmid_description)
-    sanitized_fraction_covered <- sanitize_filename(plasmid_fraction_covered)
 
-    plasmid_id_description <- paste0(plasmid_id, "_", sanitized_description, "_", sanitized_fraction_covered)
+    plasmid_id_description <- paste0(plasmid_id, "_", sanitized_description)
 
     cat("Plasmid ID: ", plasmid_id, "\n")
     cat("Plasmid Description: ", plasmid_description, "\n")
-    cat("Plasmid Fraction Covered: ", plasmid_fraction_covered, "\n")
     cat("Plasmid ID Description: ", plasmid_id_description, "\n")
 
     # Path to plasmid fasta files
@@ -2406,13 +2483,13 @@ for (sample_dir in sample_dirs) {
       cat("Processing plasmid: ", plasmid_id, "\n")
 
       # Use sanitized descriptions in the filename
-      cat_plasmid_fasta <- file.path(OUT, paste0(sample_name, "_", plasmid_id, "_", sanitized_description, "_", sanitized_fraction_covered, "_term.fasta"))
+      cat_plasmid_fasta <- file.path(OUT, paste0(sample_name, "_", plasmid_id, "_", sanitized_description, "_term.fasta"))
 
       cat("Concatenating files for ", sample_name, ":\n")
       cat("Plasmid fasta: ", plasmid_fasta, "\n")
 
       # Run a system command to concatenate files (equivalent to 'cat' in Bash)
-      system(paste("cat", plasmid_fasta, ">", cat_plasmid_fasta))
+      system(paste("cat", shQuote(plasmid_fasta), ">", shQuote(cat_plasmid_fasta)))
 
       cat("Concatenating is complete for ", sample_name, "\n")
       cat("Concatenated plasmid fasta: ", cat_plasmid_fasta, "\n")
