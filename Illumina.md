@@ -2399,9 +2399,8 @@ for sample_dir in "${PLASMIDS_DIR}"/*; do
       echo "Concatenating files for ${sample_name}:"
       echo "Plasmid fasta: ${plasmid_fasta}"
       cat "${plasmid_fasta}" > "${cat_plasmid_fasta}"
-
-      echo "Concatenating is complete for ${sample_name}"
       echo "Concatenated plasmid fasta: ${cat_plasmid_fasta}"
+      echo "Concatenating is complete for ${sample_name}"
     done
   done
 done
