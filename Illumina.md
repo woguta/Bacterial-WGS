@@ -370,7 +370,7 @@ run the job as saved
 sbatch -w compute06 run_fastqc_trim.sh
 ```
 
-Subsampling the reads in fastp_dir
+NB: Subsampling the reads in fastp_dir
 ```
 #!/usr/bin/bash -l
 #SBATCH --partition=batch
@@ -511,261 +511,7 @@ iii) Check thru
 cat ./results/spades/contigs.fasta
 ```
 
-iv) For plasmid assembly
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J PlasmidSPAdes
-#SBATCH -n 16
-
-# module purge
-module purge
-
-# Load modules
-module load spades/3.15
-
-# Define input and output directories
-input_dir=./results/fastp
-output_dir=./results/plasmid_assembly
-
-# Make output directory
-mkdir -p "${output_dir}"
-
-# Iterate over all files in the input directory
-for file in ${input_dir}/*.R1.trim.fastq.gz; do
-  # Extract sample name from file name
-  sample=$(basename "${file}" .R1.trim.fastq.gz)
-
-  # Check if the corresponding read 2 file exists
-  file2=${input_dir}/${sample}.R2.trim.fastq.gz
-  if [ ! -f ${file2} ]; then
-    echo "Error: ${file2} not found!"
-    continue
-  
-  fi
-  
-  # Make output directory for this sample
-  mkdir -p "${output_dir}/${sample}"
-
-  # Run SPAdes for plasmid assembly
-  spades.py --plasmid \
-            -1 ${input_dir}/${sample}.R1.trim.fastq.gz \
-            -2 ${input_dir}/${sample}.R2.trim.fastq.gz \
-            -o ${output_dir}/${sample} \
-            -t 16 \
-            -m 100 \
-            --debug
-done
-```
-vii) Identify the plasmids/annotate
-
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J plasmidID
-#SBATCH -n 16
-
-# Exit with error reporting
-set -e
-
-# Load modules
-module purge
-module load plasmidid/1.6.5
-
-# Define directories and date now
-fastp_dir="./results/fastp"
-output_db="./plasmidIDdb"
-dateNow=$(date +"%Y-%m-%d")
-#dateNow="2023-06-21"
-
-# Make the output directory if it doesn't exist
-mkdir -p "${output_db}"
-
-#Download plasmidID database and set database path
-download_plasmid_database.py -o "${output_db}"
-plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
-#plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
-
-echo "Running PlasmidID"
-# Iterate over all the samples
-for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
-  if [ -f "${R1}" ]; then
-    # Extract the sample name
-    sample=$(basename "${R1}" .R1.trim.fastq.gz)
-
-    # Define R2 file path
-    R2="${fastp_dir}/${sample}.R2.trim.fastq.gz"
-
-    # Run PlasmidID for plasmid assembly
-    echo "Running PlasmidID for sample ${sample}"
-    echo "R1 file ${sample}: ${R1}"
-    echo "R2 file ${sample}: ${R2}"
-    echo "Plasmid database path: ${plasmid_db_path}"
-    plasmidID \
-      -1 "${R1}" \
-      -2 "${R2}" \
-      -d "${plasmid_db_path}" \
-      -s "${sample}" \
-      --no-trim \
-      -T 16
-  else
-    echo -e "\tERROR!!! File not found: ${fastp_dir}/*R1.trim.fastq.gz"
-    exit
-  fi
-done
-   
-```
-If the script keeps on exiting with error 1, make a new directory and remove samples not meeting the threshold. Afterwards run this script to continue
-```
-#!/usr/bin/bash -l
-#SBATCH -p batch
-#SBATCH -J CPPA_plasmidID
-#SBATCH -n 5
-
-# Exit with error reporting
-#set -e
-
-# Load modules
-module purge
-module load plasmidid/1.6.5
-
-# Define directories and database path
-fastp_dir="./results/fastp1"
-output_db="./plasmidIDdb"
-#dateNow=$(date +"%Y-%m-%d")
-#dateNow="2023-06-29"
-
-# Make the output directory if it doesn't exist
-mkdir -p "${output_db}"
-
-# Download PlasmidID database and set database path
-#download_plasmid_database.py -o "${output_db}"
-#plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
-plasmid_db_path="./plasmidIDdb/2023-06-29_plasmids.fasta"
-
-run_plasmidID() {
-    trap ' echo Error $? occurred  on $LINENO && exit 1 ' ERR
-    plasmidID \
-      -1 "${R1}" \
-      -2 "${R2}" \
-      -d "${plasmid_db_path}" \
-      -s "${sample}" \
-      --no-trim \
-      -T 5
-}
-
-echo "Running PlasmidID"
-# Iterate over all the samples
-for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
-  if [ -f "${R1}" ]; then
-    # Extract the sample name
-    sample=$(basename "${R1}" .R1.trim.fastq.gz)
-
-    # Define R2 file path
-    R2="${fastp_dir}/${sample}.R2.trim.fastq.gz"
-
-    # Check if plasmidID results already exist for ${sample}
-    if [ -f "./NO_GROUP/${sample}/${sample}_final_results.tab" ]
-    then
-       echo "Results already exist for sample ${sample}. Skipping."
-    continue
-    else
-      echo "Proceeding with analysis of ${sample}..."
-    fi
-
-    # Run PlasmidID for plasmid assembly
-    echo "Running PlasmidID for sample ${sample}"
-    echo "R1 file ${sample}: ${R1}"
-    echo "R2 file ${sample}: ${R2}"
-    echo "Plasmid database path: ${plasmid_db_path}"
-   run_plasmidID
-   if [ $? -eq 0 ]
-   then
-      echo "PlasmidID analysis of ${sample} successful..."
-   else
-      echo -e "\tPlasmidID analysis of ${sample} was NOT successful...\n\tSkipping to the next Sample"
-      continue
-   fi
-  else
-    echo -e "\tERROR!!! File not found: ${fastp_dir}/*R1.trim.fastq.gz"
-    exit
-  fi
-done
-```
-
-Plasmid data extraction R scripts
-```
-#!/usr/bin/Rscript
-
-# Load necessary modules
-module purge
-module load R/4.3.1
-
-# Open R console/studio in the terminal
-R
-
-# Remove all objects saved in R workspace
-rm(list = ls())
-
-# Set the input directory where the sample directories are located
-input_dir <- "./NO_GROUP"
-
-# Get a list of all sample directories in the input directory
-sample_dirs <- list.dirs(input_dir, recursive = FALSE)
-
-# Create an empty data frame to store the aggregated data
-agg_df <- data.frame()
-
-# Loop over each sample directory
-for (sample_dir in sample_dirs) {
-  # Get a list of all plasmid result files in the current sample directory
-  file_list <- list.files(sample_dir, pattern = "_final_results\\.tab", full.names = TRUE)
-
-  # Loop over each plasmid result file
-  for (file in file_list) {
-    # Print the file being processed for debugging
-    cat("Processing file:", file, "\n")
-
-    # Read the plasmid data from the file
-    plasmid_data <- read.delim(file, sep = "\t", header = TRUE)
-
-    # Skip sample if no plasmid data was found
-    if (nrow(plasmid_data) == 0) {
-      cat("No plasmid data found in file:", file, "\n")
-      next
-    }
-
-    # Extract the sample name from the file path
-    sample_name <- sub("_final_results\\.tab$", "", basename(file))
-
-    # Print the extracted sample name for debugging
-    cat("Sample name:", sample_name, "\n")
-
-    # Add the sample name as a column in the data frame
-    plasmid_data$sample_name <- sample_name
-
-    # Print the number of rows in the annotated data for debugging
-    cat("Number of rows in plasmid data:", nrow(plasmid_data), "\n")
-
-    # Append the data to the aggregated data frame
-    agg_df <- rbind(agg_df, plasmid_data)
-  }
-}
-
-# Set the output file name
-output_file <- paste0("combined_plasmid_data.csv")
-
-# Check if the aggregated data frame is empty
-if (nrow(agg_df) > 0) {
-  # Write the aggregated data to a CSV file
-  write.csv(agg_df, file = output_file, row.names = FALSE)
-  cat("Variant extraction complete. Data saved to:", output_file, "\n")
-} else {
-  cat("No data extracted. Output file not created.\n")
-}
-```
-
-11.Genome Assessment [input file contigs.fasta)
+10.Genome Assessment [input file contigs.fasta)
 
 I) Genome contiguity
 
@@ -979,8 +725,8 @@ ii) for all files.
 ```
 #!/usr/bin/bash -l
 #SBATCH -p batch
-#SBATCH -J Prokka_plasmidID
-#SBATCH -n 16
+#SBATCH -J Prokka
+#SBATCH -n 5
 
 # Exit with error reporting
 set -e
@@ -1013,7 +759,7 @@ for sample_dir in "${spades_dir}"/*; do
             echo "Processing Prokka for sample: ${sample}"
             prokka "$contigs_file" \
                 --outdir "$output_path" \
-                --cpus 16 \
+                --cpus 5 \
                 --mincontiglen 200 \
                 --centre C \
                 --locustag L \
@@ -1031,7 +777,7 @@ Save and run
  sbatch -w compute05 c4 run_prokka.sh
  ```
 
-12. Species Identification
+11. Species Identification
 ```
 module load blast/2.12.0+
 ```
@@ -1241,6 +987,264 @@ for (blast_data_type in blast_data_types) {
   write.csv(agg_df, file = output_file, row.names = FALSE)
 }}
 ```
+12. Plasmids Identfication
+
+i) Using plasmidspades assembly
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J PlasmidSPAdes
+#SBATCH -n 16
+
+# module purge
+module purge
+
+# Load modules
+module load spades/3.15
+
+# Define input and output directories
+input_dir=./results/fastp
+output_dir=./results/plasmid_assembly
+
+# Make output directory
+mkdir -p "${output_dir}"
+
+# Iterate over all files in the input directory
+for file in ${input_dir}/*.R1.trim.fastq.gz; do
+  # Extract sample name from file name
+  sample=$(basename "${file}" .R1.trim.fastq.gz)
+
+  # Check if the corresponding read 2 file exists
+  file2=${input_dir}/${sample}.R2.trim.fastq.gz
+  if [ ! -f ${file2} ]; then
+    echo "Error: ${file2} not found!"
+    continue
+  
+  fi
+  
+  # Make output directory for this sample
+  mkdir -p "${output_dir}/${sample}"
+
+  # Run SPAdes for plasmid assembly
+  spades.py --plasmid \
+            -1 ${input_dir}/${sample}.R1.trim.fastq.gz \
+            -2 ${input_dir}/${sample}.R2.trim.fastq.gz \
+            -o ${output_dir}/${sample} \
+            -t 16 \
+            -m 100 \
+            --debug
+done
+```
+ii) Using plasmidID 
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J plasmidID
+#SBATCH -n 16
+
+# Exit with error reporting
+set -e
+
+# Load modules
+module purge
+module load plasmidid/1.6.5
+
+# Define directories and date now
+fastp_dir="./results/fastp"
+output_db="./plasmidIDdb"
+dateNow=$(date +"%Y-%m-%d")
+#dateNow="2023-06-21"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_db}"
+
+#Download plasmidID database and set database path
+download_plasmid_database.py -o "${output_db}"
+plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+#plasmid_db_path="./plasmidIDdb/2023-06-21_plasmids.fasta"
+
+echo "Running PlasmidID"
+# Iterate over all the samples
+for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
+  if [ -f "${R1}" ]; then
+    # Extract the sample name
+    sample=$(basename "${R1}" .R1.trim.fastq.gz)
+
+    # Define R2 file path
+    R2="${fastp_dir}/${sample}.R2.trim.fastq.gz"
+
+    # Run PlasmidID for plasmid assembly
+    echo "Running PlasmidID for sample ${sample}"
+    echo "R1 file ${sample}: ${R1}"
+    echo "R2 file ${sample}: ${R2}"
+    echo "Plasmid database path: ${plasmid_db_path}"
+    plasmidID \
+      -1 "${R1}" \
+      -2 "${R2}" \
+      -d "${plasmid_db_path}" \
+      -s "${sample}" \
+      --no-trim \
+      -T 16
+  else
+    echo -e "\tERROR!!! File not found: ${fastp_dir}/*R1.trim.fastq.gz"
+    exit
+  fi
+done
+   
+```
+If the script keeps on exiting with error 1, make a new directory and remove samples not meeting the threshold. Afterwards run this script to continue
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J CPPA_plasmidID
+#SBATCH -n 5
+
+# Exit with error reporting
+#set -e
+
+# Load modules
+module purge
+module load plasmidid/1.6.5
+
+# Define directories and database path
+fastp_dir="./results/fastp1"
+output_db="./plasmidIDdb"
+#dateNow=$(date +"%Y-%m-%d")
+#dateNow="2023-06-29"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_db}"
+
+# Download PlasmidID database and set database path
+#download_plasmid_database.py -o "${output_db}"
+#plasmid_db_path="${output_db}/${dateNow}_plasmids.fasta"
+plasmid_db_path="./plasmidIDdb/2023-06-29_plasmids.fasta"
+
+run_plasmidID() {
+    trap ' echo Error $? occurred  on $LINENO && exit 1 ' ERR
+    plasmidID \
+      -1 "${R1}" \
+      -2 "${R2}" \
+      -d "${plasmid_db_path}" \
+      -s "${sample}" \
+      --no-trim \
+      -T 5
+}
+
+echo "Running PlasmidID"
+# Iterate over all the samples
+for R1 in "${fastp_dir}"/*.R1.trim.fastq.gz; do
+  if [ -f "${R1}" ]; then
+    # Extract the sample name
+    sample=$(basename "${R1}" .R1.trim.fastq.gz)
+
+    # Define R2 file path
+    R2="${fastp_dir}/${sample}.R2.trim.fastq.gz"
+
+    # Check if plasmidID results already exist for ${sample}
+    if [ -f "./NO_GROUP/${sample}/${sample}_final_results.tab" ]
+    then
+       echo "Results already exist for sample ${sample}. Skipping."
+    continue
+    else
+      echo "Proceeding with analysis of ${sample}..."
+    fi
+
+    # Run PlasmidID for plasmid assembly
+    echo "Running PlasmidID for sample ${sample}"
+    echo "R1 file ${sample}: ${R1}"
+    echo "R2 file ${sample}: ${R2}"
+    echo "Plasmid database path: ${plasmid_db_path}"
+   run_plasmidID
+   if [ $? -eq 0 ]
+   then
+      echo "PlasmidID analysis of ${sample} successful..."
+   else
+      echo -e "\tPlasmidID analysis of ${sample} was NOT successful...\n\tSkipping to the next Sample"
+      continue
+   fi
+  else
+    echo -e "\tERROR!!! File not found: ${fastp_dir}/*R1.trim.fastq.gz"
+    exit
+  fi
+done
+```
+
+Plasmid data extraction R scripts
+
+```
+#!/usr/bin/Rscript
+
+# Load necessary modules
+module purge
+module load R/4.3.1
+
+# Open R console/studio in the terminal
+R
+
+# Remove all objects saved in R workspace
+rm(list = ls())
+
+# Set the input directory where the sample directories are located
+input_dir <- "./NO_GROUP"
+
+# Get a list of all sample directories in the input directory
+sample_dirs <- list.dirs(input_dir, recursive = FALSE)
+
+# Create an empty data frame to store the aggregated data
+agg_df <- data.frame()
+
+# Loop over each sample directory
+for (sample_dir in sample_dirs) {
+  # Get a list of all plasmid result files in the current sample directory
+  file_list <- list.files(sample_dir, pattern = "_final_results\\.tab", full.names = TRUE)
+
+  # Loop over each plasmid result file
+  for (file in file_list) {
+    # Print the file being processed for debugging
+    cat("Processing file:", file, "\n")
+
+    # Read the plasmid data from the file
+    plasmid_data <- read.delim(file, sep = "\t", header = TRUE)
+
+    # Skip sample if no plasmid data was found
+    if (nrow(plasmid_data) == 0) {
+      cat("No plasmid data found in file:", file, "\n")
+      next
+    }
+
+    # Extract the sample name from the file path
+    sample_name <- sub("_final_results\\.tab$", "", basename(file))
+
+    # Print the extracted sample name for debugging
+    cat("Sample name:", sample_name, "\n")
+
+    # Add the sample name as a column in the data frame
+    plasmid_data$sample_name <- sample_name
+
+    # Print the number of rows in the annotated data for debugging
+    cat("Number of rows in plasmid data:", nrow(plasmid_data), "\n")
+
+    # Append the data to the aggregated data frame
+    agg_df <- rbind(agg_df, plasmid_data)
+  }
+}
+
+# Set the output file name
+output_file <- paste0("combined_plasmid_data.csv")
+
+# Check if the aggregated data frame is empty
+if (nrow(agg_df) > 0) {
+  # Write the aggregated data to a CSV file
+  write.csv(agg_df, file = output_file, row.names = FALSE)
+  cat("Variant extraction complete. Data saved to:", output_file, "\n")
+} else {
+  cat("No data extracted. Output file not created.\n")
+}
+```
+
 13. AMR Identification
 
 Use Resistance Gene Identifier (RGI) which applies Comprehensive Antibiotic Resistance Database (CARD) as a reference to predict antibiotic resistome(s) from protein or nucleotide data based on homology and SNP models.
