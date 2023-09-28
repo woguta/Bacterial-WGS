@@ -2331,7 +2331,7 @@ echo "All runs have completed."
 # Deactivate the Conda environment
 conda deactivate
 ```
-17. Concantenating/Extracting plasmid fasta files identified using plasmdID
+17. Concatenating/Extracting plasmid fasta files identified using plasmdID
 
 i) Using bash commandline
 ```
@@ -2408,7 +2408,7 @@ done
 echo "Concatenation for all samples is complete!"
 ```
  
-ii) using R, R script
+ii) R script for R
 
 ```
 install.packages("data.table")
@@ -2500,4 +2500,109 @@ for (sample_dir in sample_dirs) {
 }
 
 cat("Concatenation for all samples is complete!\n")
+```
+18 Investigate AMR genes carried by plasmids using Abricate and Card/RGI at once
+
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Plasmid_AbrRgi
+#SBATCH -n 5
+
+# Enable debugging and abort on error
+set -e
+
+# Set the absolute path and input and output directories
+WORK_DIR="/var/scratch/${USER}/bacteria-wgs/crpa_illumina/data"
+PLASMIDS_DIR="${WORK_DIR}/results/plasmids_fasta"
+PLASMIDS_ABRICATE="${WORK_DIR}/results/plasmids_abricate"
+PLASMIDS_RGI="${WORK_DIR}/results/plasmids_rgi"
+
+# Make the directories
+mkdir -p "${PLASMIDS_ABRICATE}"
+mkdir -p "${PLASMIDS_RGI}"
+
+#----------------------------------------------------------------------------
+
+echo "Running ABRICATE on plasmid fasta files"
+
+# Load modules
+module purge
+module load abricate/1.0.1
+
+# Set the ABRICATE databases to use
+databases=("ncbi" "card" "argannot" "resfinder" "megares" "plasmidfinder" "vfdb")
+
+# Set the ABRICATE minimum identity and coverage thresholds
+min_identity="80"
+min_coverage="60"
+
+# Loop over all sample directories in the PLASMIDS_DIR
+for sample_dir in "${PLASMIDS_DIR}"/*/; do
+  # Extract the sample name from the directory path
+  sample_name=$(basename "${sample_dir}")
+
+  # Make output directory for this sample
+  OUT="${PLASMIDS_ABRICATE}/${sample_name}"
+  mkdir -p "${OUT}"
+
+  for plasmid_file in "${sample_dir}"/*_term.fasta; do
+    plasmid_name=$(basename "${plasmid_file}" _term.fasta)
+    plasmid_fasta="${sample_dir}/${plasmid_name}_term.fasta"
+
+    # Run ABRICATE on the plasmid fasta files"
+    echo "Running Abricate for ${sample_name}: ${plasmid_name} ${plasmid_fasta}"
+    for db in "${databases[@]}"; do
+      abricate --db "${db}" \
+               --minid "${min_identity}" \
+               --mincov "${min_coverage}" \
+               "${plasmid_fasta}" \
+               > "${OUT}/${plasmid_name}_fasta_${db}.abricate.tsv"
+    done
+  done
+done
+
+echo "ABRICATE run is complete for all samples"
+
+#----------------------------------------------------------------------------
+
+echo "Running RGI on on plasmid fasta files"
+
+module purge
+module load rgi/6.0.2
+
+#soft landing to the required RGI database within the pwd
+#ln -s ~/woguta/card/localDB .
+
+# Loop over all sample directories in the PLASMIDS_DIR
+for sample_dir in "${PLASMIDS_DIR}"/*/; do
+  # Extract the sample name from the directory path
+  sample_name=$(basename "${sample_dir}")
+
+  # Make output directory for this sample
+  OUT="${PLASMIDS_RGI}/${sample_name}"
+  mkdir -p "${OUT}"
+
+  for plasmid_file in "${sample_dir}"/*_term.fasta; do
+    plasmid_name=$(basename "${plasmid_file}" _term.fasta)
+    plasmid_fasta="${sample_dir}/${plasmid_name}_term.fasta"
+
+    # Perform RGI analysis on contigs
+    echo "Running RGI for ${sample_name}: ${plasmid_name} ${plasmid_fasta}"
+    rgi main \
+       -i "${plasmid_fasta}" \
+       -o "${OUT}/${plasmid_name}_fasta.rgi.tsv" \
+       -t contig \
+       --local \
+       -a BLAST \
+       -g PRODIGAL \
+       --low_quality \
+       --num_threads 5 \
+       --split_prodigal_jobs \
+       --clean \
+       --debug
+  done
+done
+
+echo "Running RGI on assembled samples is complete"
 ```
