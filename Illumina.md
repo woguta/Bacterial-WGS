@@ -719,7 +719,7 @@ agg_df <- data.frame()
 # Loop over each sample directory
 for (sample_dir in sample_dirs) {
   # Get a list of all plasmid result files in the current sample directory
-  file_list <- list.files(sample_dir, pattern = "_final_results\\.tab", ful$
+  file_list <- list.files(sample_dir, pattern = "_final_results\\.tab", full.names = TRUE)
 
   # Loop over each plasmid result file
   for (file in file_list) {
