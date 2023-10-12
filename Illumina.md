@@ -2335,13 +2335,13 @@ echo "All runs have completed."
 # Deactivate the Conda environment
 conda deactivate
 ```
-17. Concatenating/Extracting plasmid fasta files identified using plasmdID
+17. Concatenating/Extracting plasmid fasta files and images identified using plasmdID
 
 i) Using bash commandline
 ```
 WORK_DIR="/var/scratch/woguta/bacteria-wgs/crpa_illumina/data"
-PLASMIDS_DIR="${WORK_DIR}/NO_GROUP"
-OUTPUT_DIR="${WORK_DIR}/results/plasmids_fasta"
+PLASMIDS_DIR="${WORK_DIR}/cppa_plasmids_28"
+OUTPUT_DIR="${WORK_DIR}/results/plasmids_cppa"
 mkdir -p "${OUTPUT_DIR}"
 
 # Add a debug statement to check PLASMIDS_DIR
@@ -2354,7 +2354,7 @@ for sample_dir in "${PLASMIDS_DIR}"/*; do
 
   OUT="${OUTPUT_DIR}/${sample_name}"
   mkdir -p "${OUT}"
-  
+
   # Path to plasmid results tab files
   plasmid_results_file="${PLASMIDS_DIR}/${sample_name}/${sample_name}_final_results.tab"
 
@@ -2362,17 +2362,17 @@ for sample_dir in "${PLASMIDS_DIR}"/*; do
     echo "Error: ${plasmid_results_file} not found!"
     continue
   fi
-  
+
   echo "Found plasmid results file: ${plasmid_results_file}"
-  
+
   # Extract and concatenate the first column with its fourth column description
   awk -F'\t' '{print $1 "\t" $4}' "${plasmid_results_file}" | while read -r plasmid_id plasmid_description; do
     # Sanitize plasmid_description for use in filenames
     sanitized_description="${plasmid_description// /_}"
-    sanitized_description="${sanitized_description//,/}"
-    
-    echo "Plasmid ID and its decription ${plasmid_id}: ${sanitized_description}"
-  
+    sanitized_description="${sanitized_description//,}"
+
+    echo "Plasmid ID and its description ${plasmid_id}: ${sanitized_description}"
+
     # Path to plasmid fasta files
     plasmid_files_dir="${PLASMIDS_DIR}/${sample_name}/fasta_files"
 
@@ -2386,7 +2386,7 @@ for sample_dir in "${PLASMIDS_DIR}"/*; do
     # Process and concatenate the plasmid fasta files with appropriate name tags
     for plasmid_file in "${plasmid_files_dir}"/*_term.fasta; do
       plasmid_fasta="${plasmid_files_dir}/${plasmid_id}_term.fasta"
-      
+
       echo "Processing plasmid and its fasta file ${plasmid_id}: ${plasmid_fasta}"
 
       # Check if the plasmid fasta file exists
@@ -2405,13 +2405,48 @@ for sample_dir in "${PLASMIDS_DIR}"/*; do
       cat "${plasmid_fasta}" > "${cat_plasmid_fasta}"
       echo "Concatenated plasmid fasta: ${cat_plasmid_fasta}"
       echo "Concatenating is complete for ${sample_name}"
+
+    done
+
+    # Path to plasmid image files
+    plasmid_images_dir="${PLASMIDS_DIR}/${sample_name}/images"
+
+    if [ ! -d "${plasmid_images_dir}" ]; then
+      echo "Error: ${plasmid_images_dir} not found!"
+      continue
+    fi
+
+    echo "Found plasmid files directory: ${plasmid_images_dir}"
+
+    # Process and concatenate the plasmid image files with appropriate name tags
+    for plasmid_file in "${plasmid_images_dir}"/*.png; do
+      plasmid_image="${plasmid_images_dir}/${sample_name}_${plasmid_id}.png"
+
+      echo "Processing plasmid and its image file ${plasmid_id}: ${plasmid_image}"
+
+      # Check if the plasmid image file exists
+      if [ ! -f "${plasmid_image}" ]; then
+        echo "Error: Plasmid image file not found for ${plasmid_id}"
+        continue
+      fi
+
+      echo "Processing plasmid: ${plasmid_id}"
+
+      # Use sanitized descriptions in the filename
+      cat_plasmid_image="${OUT}/${sample_name}_${plasmid_id}_${sanitized_description}.png"
+
+      echo "Concatenating files for ${sample_name}:"
+      echo "Plasmid image: ${plasmid_image}"
+      cat "${plasmid_image}" > "${cat_plasmid_image}"
+      echo "Concatenated plasmid image: ${cat_plasmid_image}"
+      echo "Concatenating is complete for ${sample_name}"
     done
   done
 done
 
 echo "Concatenation for all samples is complete!"
 ```
- 
+
 ii) R script for R
 
 ```
