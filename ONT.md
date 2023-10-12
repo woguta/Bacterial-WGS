@@ -1548,7 +1548,7 @@ for sample_dir in "${PLASMIDS_DIR}"/*; do
 
     # Process and concatenate the plasmid image files with appropriate name tags
     for plasmid_file in "${plasmid_images_dir}"/*.png; do
-      plasmid_image="${plasmid_images_dir}/${plasmid_id}.png"
+      plasmid_image="${plasmid_images_dir}/${sample_name}_${plasmid_id}.png"
 
       echo "Processing plasmid and its image file ${plasmid_id}: ${plasmid_image}"
 
