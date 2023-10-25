@@ -437,6 +437,116 @@ do
          --debug
 done
 ```
+Genome quality using quast
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J QUAST
+#SBATCH -n 4
+
+# Set the path to the directory containing the input files
+input_dir=./results/flye
+
+# Set the path to the directory where the output will be saved
+output_dir=./results/quast
+
+# Make the output directory if it doesn't exist
+mkdir -p "${output_dir}"
+
+# Loop through all FASTA files in the input directory
+for file in ${input_dir}/*.fasta; do
+    filename=$(basename "$file")
+    output_path="${output_dir}/${filename%.*}"
+    
+    # Run the quast.py command on the current file
+    quast.py "$file" -t 4 -o "$output_path"
+done
+```
+Genome completeness using BUSCO
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J BUSCO
+#SBATCH -n 16
+
+# Load modules
+module load busco/5.2.2
+
+# Define input and output directories
+INPUT_DIR=./results/flye
+OUTPUT_DIR=./results/busco
+
+#make output directory if it doesn't exist
+mkdir -p "${OUTPUT_DIR}"
+
+# Run BUSCO on all files in input directory
+for file in ${INPUT_DIR}/*.fasta
+do
+  # Extract sample name from file name
+  SAMPLE=$(basename "${file}" .fasta)
+
+  # Run BUSCO
+  busco \
+    -i ${file} \
+    -m genome \
+    -o ${OUTPUT_DIR}/${SAMPLE}_busco \
+    -l bacteria \
+    -c 16 \
+    -f \
+    |& tee ${OUTPUT_DIR}/${SAMPLE}_busco.log || echo "${SAMPLE} failed"
+done
+```
+Genome annotation using prokka
+```
+#!/usr/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Prokka
+#SBATCH -n 5
+
+# Exit with error reporting
+set -e
+
+# Load modules
+module purge
+module load prokka/1.14.6
+
+# Define directories
+spades_dir="./results/spades"
+prokka_dir="./results/prokka"
+
+# Make the output directory if it doesn't exist
+mkdir -p "${prokka_dir}"
+
+echo "Running Prokka"
+# Loop through all contigs.fasta files in the input directory
+for sample_dir in "${spades_dir}"/*; do
+    if [ -d "$sample_dir" ]; then
+        sample=$(basename "$sample_dir")
+        contigs_file="${sample_dir}/contigs.fasta"
+                
+        if [ -f "$contigs_file" ]; then
+            output_path="${prokka_dir}/${sample}"
+
+            # Echo contigs file path for the current sample
+            echo "contigs_fasta for ${sample}: ${contigs_file}"
+            
+            # Run the Prokka command on the current file
+            echo "Processing Prokka for sample: ${sample}"
+            prokka "$contigs_file" \
+                --outdir "$output_path" \
+                --cpus 5 \
+                --mincontiglen 200 \
+                --centre C \
+                --locustag L \
+                --compliant \
+                --force \
+                --debug
+        else
+            echo "ERROR!!! contigs_fasta not found for sample: ${sample}"
+        fi
+    fi
+done
+```
 PLasmid assembly and Annotation using assembly.fasta or contigs.fasta if plasmid assembly uisng flye palsmid failed (Recommended)/Used here
 ```
 #!/usr/bin/bash -l
