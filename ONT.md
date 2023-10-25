@@ -511,7 +511,7 @@ module purge
 module load prokka/1.14.6
 
 # Define directories
-spades_dir="./results/spades"
+spades_dir="./results/flye"
 prokka_dir="./results/prokka"
 
 # Make the output directory if it doesn't exist
