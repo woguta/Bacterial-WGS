@@ -2659,7 +2659,7 @@ set -e
 module purge
 module load integron-finder/2.0.2
 
-# Specify the absolute path to cmsearch
+# Specify the absolute path to dependency tools
 CMSEARCH_PATH="/export/apps/infernal/1.1.2/cmsearch"
 HMMSEARCH_PATH="/export/apps/hmmer/3.3/bin/hmmsearch"
 PRODIGAL_PATH="/export/apps/prodigal/2.6.3/bin/prodigal"
