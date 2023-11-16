@@ -2645,3 +2645,56 @@ done
 
 echo "Running RGI on assembled samples is complete"
 ```
+18 Integron analysis
+```
+#!/bin/bash -l
+#SBATCH -p batch
+#SBATCH -J Integron_Finder
+#SBATCH -n 5
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Load modules
+module purge
+module load integron-finder/2.0.2
+
+# Specify the absolute path to cmsearch
+CMSEARCH_PATH="/export/apps/infernal/1.1.2/cmsearch"
+HMMSEARCH_PATH="/export/apps/hmmer/3.3/bin/hmmsearch"
+PRODIGAL_PATH="/export/apps/prodigal/2.6.3/bin/prodigal"
+
+# Input and Output file paths
+WORK_DIR="/var/scratch/${USER}/bacteria-wgs/crpa_illumina/data"
+input_dir="${WORK_DIR}/results/spades_28"
+output_integron="${WORK_DIR}/results/integron"
+mkdir -p "${output_integron}"
+
+echo "Processing fasta files"
+for sample_dir in "${input_dir}"/*; do
+  sample_name=$(basename "${sample_dir}")
+
+  echo "Processing sample: ${sample_name}"
+
+  OUT="${output_integron}/${sample_name}"
+  mkdir -p "${OUT}"
+
+  fasta_file="${input_dir}/${sample_name}/${sample_name}_contigs.fasta"
+  if [ ! -f "${fasta_file}" ]; then
+    echo "Error: ${fasta_file} not found!"
+    continue
+  fi
+
+  echo "Running integron finder for ${sample_name}: ${fasta_file}"
+  integron_finder --local-max \
+                  --func-annot "${fasta_file}" \
+                  --outdir "${OUT}" \
+                  --cpu 5 \
+                  --prodigal "${PRODIGAL_PATH}" \
+                  --cmsearch "${CMSEARCH_PATH}" \
+                  --hmmsearch "${HMMSEARCH_PATH}" \
+                  --union-integrases \
+                  --circ \
+                  --pdf
+done
+```
